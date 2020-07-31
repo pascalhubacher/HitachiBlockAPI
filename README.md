@@ -21,7 +21,7 @@ else:<br />
     print(response)<br />
     
 <h2>get ldev information</h2>
-3845[dec] means 0F:05[hex]<br />
+<!-- 3845[dec] means 0F:05[hex]<br /> -->
 response =rest.ldevs_get(ldevNumber=3845)<br />
 print(response)<br />
 

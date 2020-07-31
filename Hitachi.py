@@ -1,9 +1,3 @@
-
-# coding: utf-8
-
-# In[40]:
-
-
 """
 This library provides an easy way to script tasks for the Hitachi Storage Arrays.
 
@@ -17,7 +11,7 @@ import ssl
 from base64 import b64encode
 
 # The current version of this library.
-VERSION = "0.0.1"
+VERSION = "0.0.2"
 
 class RestAPI:
     '''This Class can be used to : '''
@@ -105,9 +99,7 @@ class RestAPI:
                 return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
         else:
             return('ERROR: response:'+str(return_response))
-        
-        
-    
+            
     #, protocol=self.protocol, ip=self._ip_fqdn
     def storage_device_id_set(self, element_number=0):
         request_type = 'GET'
@@ -248,61 +240,135 @@ class RestAPI:
         else:
             return('ERROR: response: jobId is "None". Please specify a valid jobId.')
     
-    def ldevs_get(self, ldevNumber=None, count=100):
-        #max ldevs 16384
-        
+    def resource_group_get(self):
+        #"GET base-URL/v1/objects/storages/storage-device-ID/resource-groups"
+        '''
+        {
+            "data": [
+                {
+                "resourceGroupId": 0,
+                "resourceGroupName": "meta_resource",
+                "lockStatus": "Unlocked",
+                "virtualStorageId": 0,
+                "ldevIds": [
+                    0,
+                    4
+                ],
+                "parityGroupIds": [
+                    "1-1",
+                    "5-5"
+                ],
+                "externalParityGroupIds": [
+                    "10-2"
+                ],
+                "portIds": [
+                    "CL1-A",
+                    "CL3-A"
+                   ],
+                "hostGroupIds": [
+                    "CL3-A,0",
+                    "CL3-A,1"
+                ]
+            },
+            {
+                "resourceGroupId": 1,
+                "resourceGroupName": "VSM55555",
+                "lockStatus": "Unlocked",
+                "virtualStorageId": 2,
+                "ldevIds": [
+            ...
+            }
+            '''
+
         #create session token
         self._session_create()
         
         request_type='GET'
-        if ldevNumber == None:
-            return_response=self._webrequest(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ldevs?count='+str(count))
-        else:
-            if str(ldevNumber).isnumeric():
-                return_response=self._webrequest(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber))
-            else:
-                return('ERROR: response: ldevNumber "'+str(ldevNumber)+'" is not a number.')
-        '''
-        '''
+        return_response=self._webrequest(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/resource-groups')
+
         if len(return_response) == 3:
             if return_response[0] == 0:
                 #success
-                
-                #remove session token
-                self._session_delete()
-                
-                return(return_response[2])
-            else:
-                return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
-        else:
-            return('ERROR: response:'+str(return_response))
-    
-    def snapshots_get(self, ldevNumber=None):
-        
-        #create session token
-        self._session_create()
-        
-        request_type='GET'
-        if ldevNumber == None:
-            return_response=self._webrequest(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/snapshot-groups')
-        else:
-            if str(ldevNumber).isnumeric():
-                return_response=self._webrequest(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber))
-            else:
-                return('ERROR: response: ldevNumber "'+str(ldevNumber)+'" is not a number.')
-            
-        if len(return_response) == 3:
-            if return_response[0] == 0:
-                #success
-                
-                #remove session token
-                self._session_delete()
-                
                 return(return_response[2]['data'])
             else:
                 return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
         else:
             return('ERROR: response:'+str(return_response))
+
+    def _general_get(self, request_type, url_suffix=None):
+        #create session token
+        self._session_create()
+        
+        return_response = self._webrequest(request_type=request_type, url_suffix=url_suffix)
+
+        if len(return_response) == 3:
+            if return_response[0] == 0:
+                #success
+                
+                #remove session token
+                self._session_delete()
+
+                if not len(return_response[2]) == 0:
+                    #remove the data key
+                    if 'data' in return_response[2]:
+                        if not len(return_response[2]['data']) == 0:
+                            return(return_response[2]['data'][0])
+                        else:
+                            return(None)
+                    else:
+                        #no list
+                        return(return_response[2])
+                else:
+                    return(None)
+                    
+            else:
+                return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
+        else:
+            return('ERROR: response:'+str(return_response))
+
+    def host_groups_get(self, portId):
+        # https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/host-groups?portId=CL1-A&isUndefined=true&detailInfoType=resourceGroup
+        
+        request_type='GET'
+        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup'))
+
+    def luns_get(self, portId, hostGroupId):
+        #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
+        
+        request_type='GET'
+        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
+        
+    def ports_get(self, portId=None):
+        #https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/ports?portId=CL1-A&?detailInfoType=logins
+        
+        request_type='GET'
+        if (not portId == None):
+            return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ports?portId='+portId+'&detailInfoType=logins'))
+        else:
+            return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ports?detailInfoType=logins'))
+
+    def ldevs_get(self, ldevNumberDec=None, count=100):
+        #max ldevs 16384
+        
+        request_type='GET'
+        if ldevNumberDec == None:
+            return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ldevs?count='+str(count)))
+        else:
+            if str(ldevNumberDec).isnumeric():
+                return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumberDec)))
+            else:
+                return('ERROR: response: ldevNumber "'+str(ldevNumber)+'" is not a decimal ldev number')
+
+    def snapshots_get(self, ldevNumber=None):
+        
+        request_type='GET'
+        if ldevNumber == None:
+            return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/snapshot-groups'))
+        else:
+            if str(ldevNumber).isnumeric():
+                return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber)))
+            else:
+                return('ERROR: response: ldevNumber "'+str(ldevNumber)+'" is not a number.')
     
     def snapshots_create(self, pvolLdevId=None, snapshotGroupName=None, snapshotPoolId=None, isClone=False, isConsistencyGroup=True,
                         autoSplit=True):
