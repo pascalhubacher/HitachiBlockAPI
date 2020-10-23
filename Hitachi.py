@@ -77,8 +77,6 @@ class RestAPI:
     #general get part
     def _general_get(self, request_type, url_suffix=None):
 
-
-
         #create session token
         self._session_create()
         
@@ -359,7 +357,7 @@ class RestAPI:
         if replicationType == None:
             return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/remote-replication'))
         else:
-            if str(replicationType) is in ['GAD', 'UR', 'TC']:
+            if str(replicationType) in ['GAD', 'UR', 'TC']:
                 return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/remote-replication?'))
 
     #get ports
