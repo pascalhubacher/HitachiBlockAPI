@@ -20,7 +20,7 @@ class RestAPI:
         self._ip_fqdn = storage_fqdn_ip
         self.__userAndPass = b64encode((username+':'+password).encode('utf-8')).decode("ascii")
         self._protocol = protocol
-        self._storage_device_id = str(self.storage_device_id_get())
+        self._storage_device_id = None
         self._token = None
         self._session_id = None
         #self.__maxConnectionsParallelTotal = 8
@@ -76,6 +76,9 @@ class RestAPI:
     
     #general get part
     def _general_get(self, request_type, url_suffix=None):
+        #set store_device_id if it is None
+        if self.storageDeviceId = None:
+            self.storageDeviceId = str(self.storage_device_id_get())
 
         #create session token
         self._session_create()
