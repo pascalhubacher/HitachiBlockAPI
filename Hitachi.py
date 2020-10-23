@@ -76,10 +76,6 @@ class RestAPI:
     
     #general get part
     def _general_get(self, request_type, url_suffix=None):
-        #set store_device_id if it is None
-        if self.storageDeviceId = None:
-            self.storageDeviceId = str(self.storage_device_id_get())
-
         #create session token
         self._session_create()
         
@@ -110,10 +106,16 @@ class RestAPI:
         else:
             return('ERROR: response:'+str(return_response))
 
+    def _general_execute(self):
+        #set StorageDeviceId if not already set
+        if self._storage_device_id == None:
+            self.storage_device_id_set()
+
     #gets the storge device id
     def storage_device_id_get(self):
         '''This function is '''
         request_type = 'GET'
+        
         return_response=self._webrequest(request_type=request_type, 
                                      url_suffix='/ConfigurationManager/v1/objects/storages')
         '''
@@ -140,6 +142,7 @@ class RestAPI:
     #set storage device id        
     def storage_device_id_set(self, element_number=0):
         request_type = 'GET'
+
         return_response=self._webrequest(request_type=request_type, 
                                      url_suffix='/ConfigurationManager/v1/objects/storages')
         '''
@@ -167,6 +170,10 @@ class RestAPI:
     #get session id
     def _session_get(self):
         request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
         return_response=self._webrequest(request_type=request_type, 
                                 url_suffix='/ConfigurationManager/v1/objects/storages/'+self._storage_device_id+'/sessions')
         '''
@@ -196,6 +203,10 @@ class RestAPI:
         '''
         '''
         request_type='POST'
+
+        #execute general procedures
+        self._general_execute()
+
         return_response=self._webrequest(request_type=request_type, 
                                 url_suffix='/ConfigurationManager/v1/objects/storages/'+self._storage_device_id+'/sessions')
         '''
@@ -222,9 +233,12 @@ class RestAPI:
         '''
         '''
         request_type='DELETE'
+
+        #execute general procedures
+        self._general_execute()
+        
         return_response=self._webrequest(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/sessions/'+str(self._session_id))
-        '''
-        '''
+        
         if len(return_response) == 3:
             if return_response[0] == 0:
                 #success
@@ -237,10 +251,15 @@ class RestAPI:
         else:
             return('ERROR: response:'+str(return_response))
     
+    #!!!!! old look at it !!!!!!!!!!!
     #get jobs
     def jobs_get(self):
         '''
         '''
+
+        #execute general procedures
+        self._general_execute()
+
         #create session token
         self._session_create()
         
@@ -266,12 +285,14 @@ class RestAPI:
     def jobs_get_last(self):
         '''
         '''
+
         return(self.jobs_get()[0])
     
     #get job by id
     def jobs_get_by_jobid(self, jobId=None):
         '''
         '''
+
         response = self.jobs_get()
         if not jobId == None:
             for job in response:
@@ -282,6 +303,7 @@ class RestAPI:
         else:
             return('ERROR: response: jobId is "None". Please specify a valid jobId.')
     
+    #!!!!!!!!old look at it!!!!!!!!!
     #get resource group
     def resource_group_get(self):
         #"GET base-URL/v1/objects/storages/storage-device-ID/resource-groups"
@@ -322,12 +344,13 @@ class RestAPI:
             ...
             }
             '''
-
-        #create session token
-        self._session_create()
-        
+   
         request_type='GET'
-        return_response=self._webrequest(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/resource-groups')
+
+        #execute general procedures
+        self._general_execute()
+
+        return_response = self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/' + str(self._storage_device_id) + '/resource-groups')
 
         if len(return_response) == 3:
             if return_response[0] == 0:
@@ -341,22 +364,31 @@ class RestAPI:
     #get host group
     def host_groups_get(self, portId):
         # https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/host-groups?portId=CL1-A&isUndefined=true&detailInfoType=resourceGroup
-        
         request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
         return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup'))
 
     #get lun
     def luns_get(self, portId, hostGroupId):
         #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
-        
         request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
         return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
         
     #get all replication configuration
     def replication_get(self, replicationType=None):
+        request_type='GET'
         #"https://10.10.10.10/ConfigurationManager/v1/objects/remote-replication"
         
-        request_type='GET'
+        #execute general procedures
+        self._general_execute()
+
         if replicationType == None:
             return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/remote-replication'))
         else:
@@ -366,8 +398,11 @@ class RestAPI:
     #get ports
     def ports_get(self, portId=None):
         #https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/ports?portId=CL1-A&?detailInfoType=logins
-        
         request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
         if (not portId == None):
             return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ports?portId='+portId+'&detailInfoType=logins'))
         else:
@@ -376,8 +411,11 @@ class RestAPI:
     #get ldevs
     def ldevs_get(self, ldevNumberDec=None, count=100):
         #max ldevs 16384
-        
         request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+        
         if ldevNumberDec == None:
             return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ldevs?count='+str(count)))
         else:
@@ -388,8 +426,11 @@ class RestAPI:
 
     #get snapshots
     def snapshots_get(self, ldevNumber=None):
-        
         request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
         if ldevNumber == None:
             return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/snapshot-groups'))
         else:
@@ -402,6 +443,9 @@ class RestAPI:
     def snapshots_create(self, pvolLdevId=None, snapshotGroupName=None, snapshotPoolId=None, isClone=False, isConsistencyGroup=True,
                         autoSplit=True):
         
+        #execute general procedures
+        self._general_execute()
+
         #create session token
         self._session_create()
         
@@ -438,7 +482,9 @@ class RestAPI:
     
     #resync snapshots
     def snapshots_resync(self, snapshotGroupName=None, autoSplit=True):
-        
+        #execute general procedures
+        self._general_execute()
+
         #create session token
         self._session_create()
         
@@ -465,7 +511,9 @@ class RestAPI:
     
     #delete snapshots
     def snapshots_delete(self, snapshotGroupName=None):
-        
+        #execute general procedures
+        self._general_execute()
+
         #create session token
         self._session_create()
         
