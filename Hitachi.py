@@ -350,16 +350,7 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
 
-        return_response = self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/' + str(self._storage_device_id) + '/resource-groups')
-
-        if len(return_response) == 3:
-            if return_response[0] == 0:
-                #success
-                return(return_response[2]['data'])
-            else:
-                return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
-        else:
-            return('ERROR: response:'+str(return_response))
+        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/' + str(self._storage_device_id) + '/resource-groups'))
     
     #get host group
     def host_groups_get(self, portId):
