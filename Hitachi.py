@@ -20,7 +20,7 @@ class RestAPI:
         self._ip_fqdn = storage_fqdn_ip
         self.__userAndPass = b64encode((username+':'+password).encode('utf-8')).decode("ascii")
         self._protocol = protocol
-        self._storage_device_id = None
+        self._storage_device_id = str(storage_device_id_get())
         self._token = None
         self._session_id = None
         #self.__maxConnectionsParallelTotal = 8
@@ -74,6 +74,41 @@ class RestAPI:
         connection.close()
         return(return_response)
     
+    #general get part
+    def _general_get(self, request_type, url_suffix=None):
+
+
+
+        #create session token
+        self._session_create()
+        
+        return_response = self._webrequest(request_type=request_type, url_suffix=url_suffix)
+
+        if len(return_response) == 3:
+            if return_response[0] == 0:
+                #success
+                
+                #remove session token
+                self._session_delete()
+
+                if not len(return_response[2]) == 0:
+                    #remove the data key
+                    if 'data' in return_response[2]:
+                        if not len(return_response[2]['data']) == 0:
+                            return(return_response[2]['data'][0])
+                        else:
+                            return(None)
+                    else:
+                        #no list
+                        return(return_response[2])
+                else:
+                    return(None)
+                    
+            else:
+                return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
+        else:
+            return('ERROR: response:'+str(return_response))
+
     #gets the storge device id
     def storage_device_id_get(self):
         '''This function is '''
@@ -302,38 +337,6 @@ class RestAPI:
         else:
             return('ERROR: response:'+str(return_response))
     
-    #general get part
-    def _general_get(self, request_type, url_suffix=None):
-        #create session token
-        self._session_create()
-        
-        return_response = self._webrequest(request_type=request_type, url_suffix=url_suffix)
-
-        if len(return_response) == 3:
-            if return_response[0] == 0:
-                #success
-                
-                #remove session token
-                self._session_delete()
-
-                if not len(return_response[2]) == 0:
-                    #remove the data key
-                    if 'data' in return_response[2]:
-                        if not len(return_response[2]['data']) == 0:
-                            return(return_response[2]['data'][0])
-                        else:
-                            return(None)
-                    else:
-                        #no list
-                        return(return_response[2])
-                else:
-                    return(None)
-                    
-            else:
-                return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
-        else:
-            return('ERROR: response:'+str(return_response))
-
     #get host group
     def host_groups_get(self, portId):
         # https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/host-groups?portId=CL1-A&isUndefined=true&detailInfoType=resourceGroup
@@ -349,11 +352,15 @@ class RestAPI:
         return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
         
     #get all replication configuration
-    def replication_get(self):
+    def replication_get(self, replicationType=None):
         #"https://10.10.10.10/ConfigurationManager/v1/objects/remote-replication"
         
         request_type='GET'
-        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/remote-replication'))
+        if replicationType == None:
+            return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/remote-replication'))
+        else:
+            if str(replicationType) is in ['GAD', 'UR', 'TC']:
+                return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/remote-replication?'))
 
     #get ports
     def ports_get(self, portId=None):
