@@ -26,6 +26,7 @@ class RestAPI:
         #self.__maxConnectionsParallelTotal = 8
         #self.__maxConnectionsParallelGet = 6
     
+    #extecutes the web request
     def _webrequest(self, request_type='GET', url_suffix='/ConfigurationManager/v1/objects/storages/', body=''):
         '''Return the json response of the webrequest'''
         
@@ -73,7 +74,7 @@ class RestAPI:
         connection.close()
         return(return_response)
     
-    #, protocol=self.protocol, ip=self._ip_fqdn
+    #gets the storge device id
     def storage_device_id_get(self):
         '''This function is '''
         request_type = 'GET'
@@ -99,8 +100,8 @@ class RestAPI:
                 return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
         else:
             return('ERROR: response:'+str(return_response))
-            
-    #, protocol=self.protocol, ip=self._ip_fqdn
+
+    #set storage device id        
     def storage_device_id_set(self, element_number=0):
         request_type = 'GET'
         return_response=self._webrequest(request_type=request_type, 
@@ -126,8 +127,8 @@ class RestAPI:
                 return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
         else:
             return('ERROR: response:'+str(return_response))
-
-    #, protocol='https://', ip='127.0.0.1', user='maintenance', password='raid-maintenance'
+    
+    #get session id
     def _session_get(self):
         request_type='GET'
         return_response=self._webrequest(request_type=request_type, 
@@ -154,6 +155,7 @@ class RestAPI:
         else:
             return('ERROR: response:'+str(return_response))
     
+    #create session
     def _session_create(self):
         '''
         '''
@@ -179,6 +181,7 @@ class RestAPI:
         else:
             return('ERROR: response:'+str(return_response))
         
+    #delete session
     def _session_delete(self):
         '''
         '''
@@ -197,7 +200,8 @@ class RestAPI:
                 return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
         else:
             return('ERROR: response:'+str(return_response))
-        
+    
+    #get jobs
     def jobs_get(self):
         '''
         '''
@@ -222,11 +226,13 @@ class RestAPI:
         else:
             return('ERROR: response:'+str(return_response))
     
+    #get last job
     def jobs_get_last(self):
         '''
         '''
         return(self.jobs_get()[0])
     
+    #get job by id
     def jobs_get_by_jobid(self, jobId=None):
         '''
         '''
@@ -240,6 +246,7 @@ class RestAPI:
         else:
             return('ERROR: response: jobId is "None". Please specify a valid jobId.')
     
+    #get resource group
     def resource_group_get(self):
         #"GET base-URL/v1/objects/storages/storage-device-ID/resource-groups"
         '''
@@ -294,7 +301,8 @@ class RestAPI:
                 return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
         else:
             return('ERROR: response:'+str(return_response))
-
+    
+    #general get part
     def _general_get(self, request_type, url_suffix=None):
         #create session token
         self._session_create()
@@ -326,18 +334,28 @@ class RestAPI:
         else:
             return('ERROR: response:'+str(return_response))
 
+    #get host group
     def host_groups_get(self, portId):
         # https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/host-groups?portId=CL1-A&isUndefined=true&detailInfoType=resourceGroup
         
         request_type='GET'
         return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup'))
 
+    #get lun
     def luns_get(self, portId, hostGroupId):
         #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
         
         request_type='GET'
         return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
         
+    #get all replication configuration
+    def replication_get(self):
+        #"https://10.10.10.10/ConfigurationManager/v1/objects/remote-replication"
+        
+        request_type='GET'
+        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/remote-replication'))
+
+    #get ports
     def ports_get(self, portId=None):
         #https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/ports?portId=CL1-A&?detailInfoType=logins
         
@@ -347,6 +365,7 @@ class RestAPI:
         else:
             return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ports?detailInfoType=logins'))
 
+    #get ldevs
     def ldevs_get(self, ldevNumberDec=None, count=100):
         #max ldevs 16384
         
@@ -359,6 +378,7 @@ class RestAPI:
             else:
                 return('ERROR: response: ldevNumber "'+str(ldevNumber)+'" is not a decimal ldev number')
 
+    #get snapshots
     def snapshots_get(self, ldevNumber=None):
         
         request_type='GET'
@@ -370,6 +390,7 @@ class RestAPI:
             else:
                 return('ERROR: response: ldevNumber "'+str(ldevNumber)+'" is not a number.')
     
+    #create snapshots
     def snapshots_create(self, pvolLdevId=None, snapshotGroupName=None, snapshotPoolId=None, isClone=False, isConsistencyGroup=True,
                         autoSplit=True):
         
@@ -407,6 +428,7 @@ class RestAPI:
         else:
             return('ERROR: response:'+str(return_response))
     
+    #resync snapshots
     def snapshots_resync(self, snapshotGroupName=None, autoSplit=True):
         
         #create session token
@@ -432,7 +454,8 @@ class RestAPI:
                 return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
         else:
             return('ERROR: response:'+str(return_response))
-        
+    
+    #delete snapshots
     def snapshots_delete(self, snapshotGroupName=None):
         
         #create session token
