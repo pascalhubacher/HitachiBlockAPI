@@ -20,7 +20,7 @@ class RestAPI:
         self._ip_fqdn = storage_fqdn_ip
         self.__userAndPass = b64encode((username+':'+password).encode('utf-8')).decode("ascii")
         self._protocol = protocol
-        self._storage_device_id = str(storage_device_id_get())
+        self._storage_device_id = str(self._storage_device_id_get())
         self._token = None
         self._session_id = None
         #self.__maxConnectionsParallelTotal = 8
