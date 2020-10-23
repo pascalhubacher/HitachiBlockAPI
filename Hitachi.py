@@ -376,6 +376,29 @@ class RestAPI:
 
         return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
         
+    #not done yet
+    #get the luns of all hostgroups of one port
+    def luns_get_all_hostgroups_one_port(self, portId):
+        #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
+
+    #not done yet
+    #get the luns of all hostgroups of one port
+    def luns_get_all_hostgroups_all_ports(self):
+        #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
+    
+
     #get all replication configuration
     def replication_get(self, replicationType=None):
         request_type='GET'
