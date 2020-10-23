@@ -92,7 +92,7 @@ class RestAPI:
                     #remove the data key
                     if 'data' in return_response[2]:
                         if not len(return_response[2]['data']) == 0:
-                            return(return_response[2]['data'][0])
+                            return(return_response[2]['data'])
                         else:
                             return(None)
                     else:
@@ -251,11 +251,11 @@ class RestAPI:
         else:
             return('ERROR: response:'+str(return_response))
     
-    #!!!!! old look at it !!!!!!!!!!!
     #get jobs
     def jobs_get(self):
         '''
         '''
+        request_type='GET'
 
         #execute general procedures
         self._general_execute()
@@ -263,24 +263,8 @@ class RestAPI:
         #create session token
         self._session_create()
         
-        request_type='GET'
-        return_response=self._webrequest(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/jobs')
-        '''
-        '''
-        if len(return_response) == 3:
-            if return_response[0] == 0:
-                #success
-                
-                #remove session token
-                self._session_delete()
-                
-                #print(return_response)
-                return(return_response[2]['data'])
-            else:
-                return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
-        else:
-            return('ERROR: response:'+str(return_response))
-    
+        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/jobs'))
+        
     #get last job
     def jobs_get_last(self):
         '''
@@ -303,7 +287,6 @@ class RestAPI:
         else:
             return('ERROR: response: jobId is "None". Please specify a valid jobId.')
     
-    #!!!!!!!!old look at it!!!!!!!!!
     #get resource group
     def resource_group_get(self):
         #"GET base-URL/v1/objects/storages/storage-device-ID/resource-groups"
@@ -362,6 +345,27 @@ class RestAPI:
 
         return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup'))
 
+    #get host group of all ports
+    def host_groups_all_ports_get(self):
+        # https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/host-groups?portId=CL1-A&isUndefined=true&detailInfoType=resourceGroup
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        #get all portIds
+        return_response_ports = self.ports_get()
+        host_groups = {}
+        print('Number of storage ports:', len(return_response_ports))
+        i = 0
+        for port in return_response_ports:
+            i += 1
+            print(str(port['portId']), 'port ' + str(i) + 'of' + str(len(return_response_ports)))
+            host_groups[str(port['portId'])] = {}
+            host_groups[str(port['portId'])] = self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/host-groups?portId='+str(port['portId'])+'&isUndefined=false&detailInfoType=resourceGroup')
+        print('done')
+        return(host_groups)
+
     #get lun
     def luns_get(self, portId, hostGroupId):
         #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
@@ -376,7 +380,7 @@ class RestAPI:
     def replication_get(self, replicationType=None):
         request_type='GET'
         #"https://10.10.10.10/ConfigurationManager/v1/objects/remote-replication"
-        
+                
         #execute general procedures
         self._general_execute()
 
@@ -384,20 +388,23 @@ class RestAPI:
             return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/remote-replication'))
         else:
             if str(replicationType) in ['GAD', 'UR', 'TC']:
-                return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/remote-replication?'))
+                return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/remote-replications?replicationType='+str(replicationType)))
 
     #get ports
-    def ports_get(self, portId=None):
+    def ports_get(self, portId=None, logins=None):
         #https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/ports?portId=CL1-A&?detailInfoType=logins
         request_type='GET'
 
         #execute general procedures
         self._general_execute()
 
-        if (not portId == None):
+        if not (portId == None):
             return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ports?portId='+portId+'&detailInfoType=logins'))
         else:
-            return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ports?detailInfoType=logins'))
+            if logins == None:
+                return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ports'))
+            else:
+                return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ports?detailInfoType=logins'))
 
     #get ldevs
     def ldevs_get(self, ldevNumberDec=None, count=100):
