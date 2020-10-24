@@ -10,6 +10,8 @@ import json
 import ssl
 from base64 import b64encode
 
+DESCRIPTION = 'detail'
+
 # The current version of this library.
 VERSION = "0.0.2"
 
@@ -334,16 +336,29 @@ class RestAPI:
         self._general_execute()
 
         return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/' + str(self._storage_device_id) + '/resource-groups'))
+
+    #get host group of one port
     
-    #get host group
-    def host_groups_get(self, portId):
+
+    #get host groups of one port
+    def host_groups_one_port_get(self, portId):
         # https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/host-groups?portId=CL1-A&isUndefined=true&detailInfoType=resourceGroup
         request_type='GET'
 
         #execute general procedures
         self._general_execute()
 
-        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup'))
+        return_response = self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup')
+        hostGroups = {}
+        print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
+        i = 0
+        for hostGroup in return_response:
+            i += 1
+            print(str(hostGroup['hostGroupId']), ' hostgroup ' + str(i) + 'of' + str(len(return_response)))
+            hostGroups[str(hostGroup['hostGroupId'])] = {}
+            hostGroups[str(hostGroup['hostGroupId'])][DESCRIPTION] = hostGroup
+
+        return(hostGroups)
 
     #get host group of all ports
     def host_groups_all_ports_get(self):
@@ -354,17 +369,18 @@ class RestAPI:
         self._general_execute()
 
         #get all portIds
-        return_response_ports = self.ports_get()
-        host_groups = {}
-        print('Number of storage ports:', len(return_response_ports))
+        return_response = self.ports_get()
+        ports = {}
+        print('Number of storage ports:', len(return_response))
         i = 0
-        for port in return_response_ports:
+        for port in return_response:
             i += 1
-            print(str(port['portId']), 'port ' + str(i) + 'of' + str(len(return_response_ports)))
-            host_groups[str(port['portId'])] = {}
-            host_groups[str(port['portId'])] = self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/host-groups?portId='+str(port['portId'])+'&isUndefined=false&detailInfoType=resourceGroup')
-        print('done')
-        return(host_groups)
+            print(str(port['portId']), 'port ' + str(i) + 'of' + str(len(return_response)))
+            ports[str(port['portId'])] = {}
+            ports[str(port['portId'])][DESCRIPTION] = port
+            ports[str(port['portId'])] = self.host_groups_one_port_get(port['portId'])
+
+        return(ports)
 
     #get lun
     def luns_get(self, portId, hostGroupId):
@@ -385,7 +401,34 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
 
-        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
+        '''
+        {'hostGroupId': 'CL3-B,0',
+        'portId': 'CL3-B',
+        'hostGroupNumber': 0,
+        'hostGroupName': '3B-G00',
+        'hostMode': 'LINUX/IRIX',
+        'resourceGroupId': 0,
+        'isDefined': True}
+        '''
+        #get all hostgroups of a port
+        return_response_hostgroups = self.host_groups_get(portId)
+        luns = {}
+        luns[str(portId)] = {}
+        print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response_hostgroups))
+        i = 0
+        for hostgroup in return_response_hostgroups:
+            i += 1
+            print(str(hostgroup['hostGroupId']), ' hostgroup ' + str(i) + 'of' + str(len(return_response_hostgroups)))
+            #create hostgroup element
+            luns[str(portId)][str(hostgroup['hostGroupId'])] = {}
+
+
+            host_groups[str(port['portId'])] = self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/host-groups?portId='+str(port['portId'])+'&isUndefined=false&detailInfoType=resourceGroup')
+        print('done')
+        return(luns)
+
+
+        #return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
 
     #not done yet
     #get the luns of all hostgroups of one port
