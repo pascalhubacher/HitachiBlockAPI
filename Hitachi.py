@@ -337,8 +337,9 @@ class RestAPI:
 
         return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/' + str(self._storage_device_id) + '/resource-groups'))
 
-    #get host group of one port
-    
+    #get specific host group of one port
+    def host_group_one_port_get(self, portId, hostGroup):
+        return()
 
     #get host groups of one port
     def host_groups_one_port_get(self, portId):
@@ -382,7 +383,7 @@ class RestAPI:
 
         return(ports)
 
-    #get lun
+    #get luns of one hostgroup
     def luns_get(self, portId, hostGroupId):
         #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
         request_type='GET'
@@ -394,7 +395,7 @@ class RestAPI:
         
     #not done yet
     #get the luns of all hostgroups of one port
-    def luns_get_all_hostgroups_one_port(self, portId):
+    def luns_one_port_get(self, portId):
         #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
         request_type='GET'
 
@@ -432,7 +433,7 @@ class RestAPI:
 
     #not done yet
     #get the luns of all hostgroups of one port
-    def luns_get_all_hostgroups_all_ports(self):
+    def luns_all_ports_get(self):
         #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
         request_type='GET'
 
