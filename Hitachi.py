@@ -39,29 +39,36 @@ class RestAPI:
         #self.__maxConnectionsParallelGet = 6
     
     #extecutes the web request
-    def _webrequest(self, request_type='GET', url_suffix=self.__url_base+self.__url_storages, body=''):
+    def _webrequest(self, request_type='GET', url_suffix=None, body=''):
         '''Return the json response of the webrequest'''
         
-        url = self._protocol+self._ip_fqdn+url_suffix
-        
+        if url_suffix == None:
+            #set standar url suffix
+            url = self._protocol+self._ip_fqdn+self.__url_base+self.__url_storages
+        else:
+            #use the url suffix that was set in the function call
+            url = self._protocol+self._ip_fqdn+url_suffix    
+
+        #if already a token is set then use it otherwise use the user and password
         if self._token is None:
+            #user and password
             headers = {'Accept':'application/json', 'Content-Type':'application/json', 'Authorization' : 'Basic %s' %  self.__userAndPass}
         else:
+            #token
             headers = {'Accept':'application/json', 'Content-Type':'application/json', 'Authorization' : 'Session '+str(self._token)}
 
         #create https connection, unverified connection
         connection = http.client.HTTPSConnection(self._ip_fqdn, context=ssl._create_unverified_context())
 
-        # Send login request
+        # Send request
         connection.request(method=request_type, url=url, headers=headers, body=body)
         
-        #print()
         # Get the response
         response = connection.getresponse()
         # Display the response status
         #print()
         #print ("Status = ", response.status)
-        # 200 Successful
+        # 200 Ok
         # 202 Accepted The request has been accepted for processing, but the processing has not been completed.
         if response.status == http.client.OK or response.status == http.client.ACCEPTED:
             #print("connection successful!")
@@ -121,15 +128,16 @@ class RestAPI:
     def _general_execute(self):
         #set StorageDeviceId if not already set
         if self._storage_device_id == None:
-            self.storage_device_id_set()
+            self._storage_device_id_set()
 
     #gets the storge device id
-    def storage_device_id_get(self):
+    def _storage_device_id_get(self):
         '''This function is '''
         request_type = 'GET'
         
         return_response=self._webrequest(request_type=request_type, 
                                      url_suffix=self.__url_base+self.__url_storages)
+
         '''
         {
             "data": [
@@ -152,7 +160,7 @@ class RestAPI:
             return('ERROR: response:'+str(return_response))
 
     #set storage device id        
-    def storage_device_id_set(self, element_number=0):
+    def _storage_device_id_set(self, element_number=0):
         request_type = 'GET'
 
         return_response=self._webrequest(request_type=request_type, 
@@ -186,8 +194,7 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
 
-        return_response=self._webrequest(request_type=request_type, 
-                                url_suffix=self.__url_base+self.__url_storages+self._storage_device_id+self.__url_sessions)
+        return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_sessions)
         '''
         {
             "data": [
@@ -219,8 +226,7 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
 
-        return_response=self._webrequest(request_type=request_type, 
-                                url_suffix=self.__url_base+self.__url_storages+self._storage_device_id+self.__url_sessions)
+        return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_sessions)
         '''
         {
             "token": "74014a6e-a4b2-4b87-8021-de0ef3e92bde",
@@ -228,6 +234,7 @@ class RestAPI:
         }
         -> [0, 200, {'token': '74014a6e-a4b2-4b87-8021-de0ef3e92bde', 'sessionId': 3}]
         '''
+
         if len(return_response) == 3:
             if return_response[0] == 0:
                 #success
@@ -249,22 +256,25 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
         
-        return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+self.__url_sessions+'/'+str(self._session_id))
-        
-        if len(return_response) == 3:
-            if return_response[0] == 0:
-                #success
-                self._token=None
-                self._session_id=None
-                #print(return_response)
-                return(return_response)
-            else:
-                return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
+        if self._session_id == None:
+            return('WARNING: nothing done as no session was created')
         else:
-            return('ERROR: response:'+str(return_response))
+            return_response = self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_sessions+'/'+str(self._session_id))
+        
+            if len(return_response) == 3:
+                if return_response[0] == 0:
+                    #success
+                    self._token=None
+                    self._session_id=None
+                    #print(return_response)
+                    return(return_response)
+                else:
+                    return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
+            else:
+                return('ERROR: response:'+str(return_response))
     
     #get jobs
-    def jobs_get(self):
+    def _jobs_get(self):
         '''
         '''
         request_type='GET'
@@ -274,22 +284,26 @@ class RestAPI:
 
         #create session token
         self._session_create()
-        
-        return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+self._storage_device_id+self.__url_jobs))
+
+        return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_jobs)       
+        print(return_response)
         
     #get last job
-    def jobs_get_last(self):
+    def _jobs_get_last(self):
         '''
         '''
-
-        return(self.jobs_get()[0])
+        return_response = self._jobs_get()
+        if return_response == None:
+            return('WARNING: no job found')
+        else:
+            return(return_response[0])
     
     #get job by id
-    def jobs_get_by_jobid(self, jobId=None):
+    def _jobs_get_by_jobid(self, jobId=None):
         '''
         '''
 
-        response = self.jobs_get()
+        response = self._jobs_get()
         if not jobId == None:
             for job in response:
                 if str(job['jobId']) == str(jobId):
@@ -313,18 +327,18 @@ class RestAPI:
         if not (portId == None):
             if logins == None:
                 #get the information of all ports
-                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ports?portId='+str(portId))
+                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ports?portId='+str(portId))
             else:
-                self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ports?portId='+str(portId)+'detailInfoType=logins')
+                self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ports?portId='+str(portId)+'detailInfoType=logins')
         else:
             if logins == None:
                 #
-                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ports'))
+                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ports')
             else:
-                return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ports?detailInfoType=logins'))
+                return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ports?detailInfoType=logins'))
 
         ports = {}
-        print('Number of storage ports:', len(return_response))
+        #print('Number of storage ports:', len(return_response))
         i = 0
         for port in return_response:
             i += 1
@@ -334,7 +348,6 @@ class RestAPI:
         
         return(ports)
 
-
     def host_groups_one_port_get(self, portId):
         # https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/host-groups?portId=CL1-A&isUndefined=true&detailInfoType=resourceGroup
         request_type='GET'
@@ -342,7 +355,7 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
 
-        return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup')
+        return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup')
         hostGroups = {}
         print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
         i = 0
