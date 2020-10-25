@@ -25,11 +25,21 @@ class RestAPI:
         self._storage_device_id = None
         self._token = None
         self._session_id = None
+        self.__url_base = '/ConfigurationManager/v1/objects'
+        self.__url_storages = '/storages'
+        self.__url_jobs = '/jobs'
+        self.__url_sessions = '/sessions'
+        self.__json_data = 'data'
+        self.__json_storage_device_id = 'storageDeviceId'
+        self.__json_token = 'token'
+        self.__json_sessionId = 'sessionId'
+
+
         #self.__maxConnectionsParallelTotal = 8
         #self.__maxConnectionsParallelGet = 6
     
     #extecutes the web request
-    def _webrequest(self, request_type='GET', url_suffix='/ConfigurationManager/v1/objects/storages/', body=''):
+    def _webrequest(self, request_type='GET', url_suffix=self.__url_base+self.__url_storages, body=''):
         '''Return the json response of the webrequest'''
         
         url = self._protocol+self._ip_fqdn+url_suffix
@@ -53,7 +63,7 @@ class RestAPI:
         #print ("Status = ", response.status)
         # 200 Successful
         # 202 Accepted The request has been accepted for processing, but the processing has not been completed.
-        if response.status == 200 or response.status == 202:
+        if response.status == http.client.OK or response.status == http.client.ACCEPTED:
             #print("connection successful!")
             #read the json bytes
             json_response_bytes = response.read()
@@ -92,9 +102,9 @@ class RestAPI:
 
                 if not len(return_response[2]) == 0:
                     #remove the data key
-                    if 'data' in return_response[2]:
-                        if not len(return_response[2]['data']) == 0:
-                            return(return_response[2]['data'])
+                    if self.__json_data in return_response[2]:
+                        if not len(return_response[2][self.__json_data]) == 0:
+                            return(return_response[2][self.__json_data])
                         else:
                             return(None)
                     else:
@@ -119,7 +129,7 @@ class RestAPI:
         request_type = 'GET'
         
         return_response=self._webrequest(request_type=request_type, 
-                                     url_suffix='/ConfigurationManager/v1/objects/storages')
+                                     url_suffix=self.__url_base+self.__url_storages)
         '''
         {
             "data": [
@@ -135,7 +145,7 @@ class RestAPI:
         if len(return_response) == 3:
             if return_response[0] == 0:
                 #success
-                return(return_response[2]['data'])
+                return(return_response[2][self.__json_data])
             else:
                 return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
         else:
@@ -146,7 +156,7 @@ class RestAPI:
         request_type = 'GET'
 
         return_response=self._webrequest(request_type=request_type, 
-                                     url_suffix='/ConfigurationManager/v1/objects/storages')
+                                     url_suffix=self.__url_base+self.__url_storages)
         '''
         {
             "data": [
@@ -162,8 +172,8 @@ class RestAPI:
         if len(return_response) == 3:
             if return_response[0] == 0:
                 #success
-                self._storage_device_id = return_response[2]['data'][int(element_number)]['storageDeviceId']
-                return(return_response[2]['data'][int(element_number)]['storageDeviceId'])
+                self._storage_device_id = return_response[2][self.__json_data][int(element_number)][self.__json_storage_device_id]
+                return(return_response[2][self.__json_data][int(element_number)][self.__json_storage_device_id])
             else:
                 return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
         else:
@@ -177,7 +187,7 @@ class RestAPI:
         self._general_execute()
 
         return_response=self._webrequest(request_type=request_type, 
-                                url_suffix='/ConfigurationManager/v1/objects/storages/'+self._storage_device_id+'/sessions')
+                                url_suffix=self.__url_base+self.__url_storages+self._storage_device_id+self.__url_sessions)
         '''
         {
             "data": [
@@ -194,7 +204,7 @@ class RestAPI:
             if return_response[0] == 0:
                 #success
                 #self._storage_device_id = return_response[2]['data'][int(element_number)]['storageDeviceId']
-                return(return_response[2]['data'])
+                return(return_response[2][self.__json_data])
             else:
                 return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
         else:
@@ -210,7 +220,7 @@ class RestAPI:
         self._general_execute()
 
         return_response=self._webrequest(request_type=request_type, 
-                                url_suffix='/ConfigurationManager/v1/objects/storages/'+self._storage_device_id+'/sessions')
+                                url_suffix=self.__url_base+self.__url_storages+self._storage_device_id+self.__url_sessions)
         '''
         {
             "token": "74014a6e-a4b2-4b87-8021-de0ef3e92bde",
@@ -222,8 +232,8 @@ class RestAPI:
             if return_response[0] == 0:
                 #success
                 #print(return_response)
-                self._token = return_response[2]['token']
-                self._session_id = return_response[2]['sessionId']
+                self._token = return_response[2][self.__json_token]
+                self._session_id = return_response[2][self.__json_sessionId]
                 return[return_response[2]]
             else:
                 return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
@@ -239,7 +249,7 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
         
-        return_response=self._webrequest(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/sessions/'+str(self._session_id))
+        return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+self.__url_sessions+'/'+str(self._session_id))
         
         if len(return_response) == 3:
             if return_response[0] == 0:
@@ -265,7 +275,7 @@ class RestAPI:
         #create session token
         self._session_create()
         
-        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/jobs'))
+        return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+self._storage_device_id+self.__url_jobs))
         
     #get last job
     def jobs_get_last(self):
@@ -288,6 +298,142 @@ class RestAPI:
             return('ERROR: response: jobId: "'+str(jobId)+'" is not found. Please specify an existing jobId.')
         else:
             return('ERROR: response: jobId is "None". Please specify a valid jobId.')
+    
+    
+        #get host groups of one port
+    
+    #get ports
+    def ports_get(self, portId=None, logins=None):
+        #https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/ports?portId=CL1-A&?detailInfoType=logins
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        if not (portId == None):
+            if logins == None:
+                #get the information of all ports
+                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ports?portId='+str(portId))
+            else:
+                self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ports?portId='+str(portId)+'detailInfoType=logins')
+        else:
+            if logins == None:
+                #
+                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ports'))
+            else:
+                return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ports?detailInfoType=logins'))
+
+        ports = {}
+        print('Number of storage ports:', len(return_response))
+        i = 0
+        for port in return_response:
+            i += 1
+            print(str(port['portId']), 'port ' + str(i) + 'of' + str(len(return_response)))
+            ports[str(port['portId'])] = {}
+            ports[str(port['portId'])][DESCRIPTION] = port
+        
+        return(ports)
+
+
+    def host_groups_one_port_get(self, portId):
+        # https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/host-groups?portId=CL1-A&isUndefined=true&detailInfoType=resourceGroup
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup')
+        hostGroups = {}
+        print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
+        i = 0
+        for hostGroup in return_response:
+            i += 1
+            print(str(hostGroup['hostGroupId']), ' hostgroup ' + str(i) + 'of' + str(len(return_response)))
+            hostGroups[str(hostGroup['hostGroupId'])] = {}
+            hostGroups[str(hostGroup['hostGroupId'])][DESCRIPTION] = hostGroup
+
+        return(hostGroups)
+
+    #get host group of all ports
+    def host_groups_all_ports_get(self):
+        # https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/host-groups?portId=CL1-A&isUndefined=true&detailInfoType=resourceGroup
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        #get all portIds
+        return_response = self.ports_get()
+        ports = {}
+        print('Number of storage ports:', len(return_response))
+        i = 0
+        for port in return_response:
+            i += 1
+            print(str(port['portId']), 'port ' + str(i) + 'of' + str(len(return_response)))
+            ports[str(port['portId'])] = {}
+            ports[str(port['portId'])][DESCRIPTION] = port
+            ports[str(port['portId'])] = self.host_groups_one_port_get(port['portId'])
+
+        return(ports)
+
+    #get luns of one hostgroup
+    def luns_get(self, portId, hostGroupId):
+        #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
+        
+    #not done yet
+    #get the luns of all hostgroups of one port
+    def luns_one_port_get(self, portId):
+        #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        '''
+        {'hostGroupId': 'CL3-B,0',
+        'portId': 'CL3-B',
+        'hostGroupNumber': 0,
+        'hostGroupName': '3B-G00',
+        'hostMode': 'LINUX/IRIX',
+        'resourceGroupId': 0,
+        'isDefined': True}
+        '''
+        #get all hostgroups of a port
+        return_response_hostgroups = self.host_groups_get(portId)
+        luns = {}
+        luns[str(portId)] = {}
+        print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response_hostgroups))
+        i = 0
+        for hostgroup in return_response_hostgroups:
+            i += 1
+            print(str(hostgroup['hostGroupId']), ' hostgroup ' + str(i) + 'of' + str(len(return_response_hostgroups)))
+            #create hostgroup element
+            luns[str(portId)][str(hostgroup['hostGroupId'])] = {}
+
+
+            host_groups[str(port['portId'])] = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+self._storage_device_id+'/host-groups?portId='+str(port['portId'])+'&isUndefined=false&detailInfoType=resourceGroup')
+        print('done')
+        return(luns)
+
+
+        #return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
+
+    #not done yet
+    #get the luns of all hostgroups of one port
+    def luns_all_ports_get(self):
+        #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
     
     #get resource group
     def resource_group_get(self):
@@ -335,113 +481,7 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
 
-        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/' + str(self._storage_device_id) + '/resource-groups'))
-
-    #get specific host group of one port
-    def host_group_one_port_get(self, portId, hostGroup):
-        return()
-
-    #get host groups of one port
-    def host_groups_one_port_get(self, portId):
-        # https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/host-groups?portId=CL1-A&isUndefined=true&detailInfoType=resourceGroup
-        request_type='GET'
-
-        #execute general procedures
-        self._general_execute()
-
-        return_response = self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup')
-        hostGroups = {}
-        print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
-        i = 0
-        for hostGroup in return_response:
-            i += 1
-            print(str(hostGroup['hostGroupId']), ' hostgroup ' + str(i) + 'of' + str(len(return_response)))
-            hostGroups[str(hostGroup['hostGroupId'])] = {}
-            hostGroups[str(hostGroup['hostGroupId'])][DESCRIPTION] = hostGroup
-
-        return(hostGroups)
-
-    #get host group of all ports
-    def host_groups_all_ports_get(self):
-        # https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/host-groups?portId=CL1-A&isUndefined=true&detailInfoType=resourceGroup
-        request_type='GET'
-
-        #execute general procedures
-        self._general_execute()
-
-        #get all portIds
-        return_response = self.ports_get()
-        ports = {}
-        print('Number of storage ports:', len(return_response))
-        i = 0
-        for port in return_response:
-            i += 1
-            print(str(port['portId']), 'port ' + str(i) + 'of' + str(len(return_response)))
-            ports[str(port['portId'])] = {}
-            ports[str(port['portId'])][DESCRIPTION] = port
-            ports[str(port['portId'])] = self.host_groups_one_port_get(port['portId'])
-
-        return(ports)
-
-    #get luns of one hostgroup
-    def luns_get(self, portId, hostGroupId):
-        #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
-        request_type='GET'
-
-        #execute general procedures
-        self._general_execute()
-
-        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
-        
-    #not done yet
-    #get the luns of all hostgroups of one port
-    def luns_one_port_get(self, portId):
-        #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
-        request_type='GET'
-
-        #execute general procedures
-        self._general_execute()
-
-        '''
-        {'hostGroupId': 'CL3-B,0',
-        'portId': 'CL3-B',
-        'hostGroupNumber': 0,
-        'hostGroupName': '3B-G00',
-        'hostMode': 'LINUX/IRIX',
-        'resourceGroupId': 0,
-        'isDefined': True}
-        '''
-        #get all hostgroups of a port
-        return_response_hostgroups = self.host_groups_get(portId)
-        luns = {}
-        luns[str(portId)] = {}
-        print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response_hostgroups))
-        i = 0
-        for hostgroup in return_response_hostgroups:
-            i += 1
-            print(str(hostgroup['hostGroupId']), ' hostgroup ' + str(i) + 'of' + str(len(return_response_hostgroups)))
-            #create hostgroup element
-            luns[str(portId)][str(hostgroup['hostGroupId'])] = {}
-
-
-            host_groups[str(port['portId'])] = self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/host-groups?portId='+str(port['portId'])+'&isUndefined=false&detailInfoType=resourceGroup')
-        print('done')
-        return(luns)
-
-
-        #return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
-
-    #not done yet
-    #get the luns of all hostgroups of one port
-    def luns_all_ports_get(self):
-        #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
-        request_type='GET'
-
-        #execute general procedures
-        self._general_execute()
-
-        return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
-    
+        return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages + str(self._storage_device_id) + '/resource-groups'))
 
     #get all replication configuration
     def replication_get(self, replicationType=None):
@@ -457,22 +497,6 @@ class RestAPI:
             if str(replicationType) in ['GAD', 'UR', 'TC']:
                 return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/remote-replications?replicationType='+str(replicationType)))
 
-    #get ports
-    def ports_get(self, portId=None, logins=None):
-        #https://10.70.4.145/ConfigurationManager/v1/objects/storages/800000058068/ports?portId=CL1-A&?detailInfoType=logins
-        request_type='GET'
-
-        #execute general procedures
-        self._general_execute()
-
-        if not (portId == None):
-            return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ports?portId='+portId+'&detailInfoType=logins'))
-        else:
-            if logins == None:
-                return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ports'))
-            else:
-                return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ports?detailInfoType=logins'))
-
     #get ldevs
     def ldevs_get(self, ldevNumberDec=None, count=100):
         #max ldevs 16384
@@ -482,10 +506,10 @@ class RestAPI:
         self._general_execute()
         
         if ldevNumberDec == None:
-            return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ldevs?count='+str(count)))
+            return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ldevs?count='+str(count)))
         else:
             if str(ldevNumberDec).isnumeric():
-                return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumberDec)))
+                return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ldevs/'+str(ldevNumberDec)))
             else:
                 return('ERROR: response: ldevNumber "'+str(ldevNumber)+'" is not a decimal ldev number')
 
@@ -497,10 +521,10 @@ class RestAPI:
         self._general_execute()
 
         if ldevNumber == None:
-            return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/snapshot-groups'))
+            return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/snapshot-groups'))
         else:
             if str(ldevNumber).isnumeric():
-                return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber)))
+                return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber)))
             else:
                 return('ERROR: response: ldevNumber "'+str(ldevNumber)+'" is not a number.')
     
@@ -528,7 +552,7 @@ class RestAPI:
             return('ERROR: response: You must specify a pvolLdevId.')
         else:
             if str(pvolLdevId).isnumeric():
-                return_response=self._webrequest(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+str(self._storage_device_id)+'/snapshots', body=body)
+                return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/snapshots', body=body)
             else:
                 return('ERROR: response: pvolLdevId "'+str(pvolLdevId)+'" is not a valid number.')
             
@@ -559,7 +583,7 @@ class RestAPI:
         if snapshotGroupName == None:
             return('ERROR: response: You must specify a snapshotGroupName.')
         else:
-            return_response=self._webrequest(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+rest._storage_device_id+'/snapshot-groups/'+str(snapshotGroupName)+'/actions/resync/invoke', body=body)
+            return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+self._storage_device_id+'/snapshot-groups/'+str(snapshotGroupName)+'/actions/resync/invoke', body=body)
             
         if len(return_response) == 3:
             if return_response[0] == 0:
@@ -586,7 +610,7 @@ class RestAPI:
         if snapshotGroupName == None:
             return('ERROR: response: You must specify a snapshotGroupName.')
         else:
-            return_response=self._webrequest(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/storages/'+rest._storage_device_id+'/snapshot-groups/'+str(snapshotGroupName))
+            return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+rest._storage_device_id+'/snapshot-groups/'+str(snapshotGroupName))
             
         if len(return_response) == 3:
             if return_response[0] == 0:
