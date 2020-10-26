@@ -9,8 +9,24 @@ import http.client
 import json
 import ssl
 from base64 import b64encode
+import logging
 
-#DESCRIPTION = 'detail'
+# create logger
+logger = logging.getLogger('Hitachi.py')
+logger.setLevel(logging.DEBUG)
+
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+
+# create formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(funcName)s - [%(levelname)s] - %(message)s')
+
+# add formatter to ch
+ch.setFormatter(formatter)
+
+# add ch to logger
+logger.addHandler(ch)
 
 # The current version of this library.
 VERSION = "0.0.2"
@@ -124,9 +140,11 @@ class RestAPI:
                     return(None)
                     
             else:
-                return('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
+                print('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]), ', request:'+str(url_suffix))
+                return(return_response)
         else:
-            return('ERROR: response:'+str(return_response))
+            print('ERROR: response:'+str(return_response))
+            return(return_response)
 
     def _general_execute(self):
         #set StorageDeviceId if not already set
@@ -413,6 +431,7 @@ class RestAPI:
 
         return(hostgroups)
 
+    #logger added
     #get luns of one hostgroup
     def luns_get(self, portId_hostGroupId):
         #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
@@ -441,24 +460,38 @@ class RestAPI:
 
         #'CL3-B,5' -> 'CL3-B' and '5'
         port, hostgroup = portId_hostGroupId.split(',')
+        logger.debug('Port:'+str(port)+' hostgroup: '+ str(hostgroup))
 
+        logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/luns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup)+'&isBasicLunInformation=false&lunOption=ALUA'))
         return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/luns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup)+'&isBasicLunInformation=false&lunOption=ALUA')
-        
-        if return_response == None:
-            print('Warning: No LUN found in Hostgroup '+str(portId_hostGroupId))
-            return(None)
-        else:
-            luns = {}
-            #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
-            i = 0
-            for lun in return_response:
-                i += 1
-                #print(str(hostGroup['hostGroupId']), ' hostgroup ' + str(i) + 'of' + str(len(return_response)))
-                luns[str(lun['lunId'])] = lun
+        logger.debug('Request response: ' + str(return_response))
 
-            return(luns)
+        #No LUN found in hostgroup
+        if return_response == None:
+            logger.warning('No LUN found in Hostgroup: '+str(portId_hostGroupId))
+            return(None)
         
-    #get the luns of all hostgroups of one port
+        #Internal Error (no hostgroup on port)
+        if isinstance(return_response, (list,)):
+            if isinstance(return_response[0], (int,)):
+                if return_response[0] == -1:
+                    logger.error('error message :'+str(return_response))
+                    return(None)
+                else:
+                    logger.error('Unknown error')
+                    return(return_response)
+
+        luns = {}
+        i = 0
+        for lun in return_response:
+            i += 1
+            logger.debug('lun information: ' + str(lun))
+            luns[str(lun['lunId'])] = lun
+
+        return(luns)
+    
+    #logger added
+    #get the luns of one hostgroups of one port
     def luns_one_port_get(self, portId):
         #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
         request_type='GET'
@@ -486,27 +519,31 @@ class RestAPI:
 
         #get all hostgroups of a port
         return_response = self.host_groups_one_port_get(portId=portId)
+        logger.debug('Request response: ' + str(return_response))
+
         luns = {}
-        #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
+        logger.info('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
         i = 0
         for hostGroup in return_response:
             i += 1
-            #print(str(hostGroup['hostGroupId']), ' hostgroup ' + str(i) + 'of' + str(len(return_response)))
+            logger.info(str(hostGroup), ' hostgroup ' + str(i) + 'of' + str(len(return_response)))
+            logger.debug('Hostgroup raw data:'+str(return_response[hostGroup]))
 
             return_response_luns = self.luns_get(portId_hostGroupId=hostGroup)
+            logger.debug('Request response: ' + str(return_response_luns))
             if return_response_luns == None:
-                #ignore hostgroup
+                #ignore hostgroup -> no luns in this hostgroup
+                logger.warning('No lun configured in hostgroup:'+str(hostGroup))
                 pass
             else:
                 for lun in return_response_luns:
                     luns[lun] = return_response_luns[lun]
-                
-                if i == 3:
-                    break
+        
+        if len(luns) == 0:
+            return(None)
+        else:
+            return(luns)
 
-        return(luns)
-
-    #not done yet
     #get the luns of all hostgroups of one port
     def luns_all_ports_get(self):
         #"https://10.10.10.10/ConfigurationManager/v1/objects/storages/800000058068/luns?portId=CL5-B&hostGroupNumber=1&isBasicLunInformation=false&lunOption=ALUA"
@@ -515,8 +552,58 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
 
-        return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
+        #get all portIds
+        return_response = self.ports_get()
+        luns = {}
+        
+        i = 0
+        for port in return_response:               
+            #host group infos
+            print(port)
+            return_response_luns = self.luns_one_port_get(portId=port)
+            if not return_response_luns == None:
+                for lun in return_response_luns:
+                    luns[lun] = return_response_luns[lun]
+
+        return(luns)      
+
+        #return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
     
+    #get the wwns of one hostgroups of one port
+    def wwns_get(self, portId_hostGroupId):
+        #/ConfigurationManager/v1/objects/host-wwns?portId=CL1-A&hostGroupNumber=0"
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        #'CL3-B,5' -> 'CL3-B' and '5'
+        port, hostgroup = portId_hostGroupId.split(',')
+
+        return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/host-wwns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup))
+        
+        #Internal Error (no hostgroup on port)
+        if return_response[0] == -1:
+            return(None)
+
+        #No WWN found in hostgroup
+        if return_response == None:
+            print('Warning: No WWN found in Hostgroup '+str(portId_hostGroupId))
+            return(None)
+        else:
+            wwns = {}
+            #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
+            i = 0
+            for wwn in return_response:
+                i += 1
+                #print(str(hostGroup['hostGroupId']), ' hostgroup ' + str(i) + 'of' + str(len(return_response)))
+                #luns[str(lun['lunId'])] = lun
+
+            return(wwns)
+
+
+        return()
+
     #get resource group
     def resource_group_get(self):
         #"GET base-URL/v1/objects/storages/storage-device-ID/resource-groups"
@@ -579,7 +666,7 @@ class RestAPI:
             if str(replicationType) in ['GAD', 'UR', 'TC']:
                 return(self._general_get(request_type=request_type, url_suffix='/ConfigurationManager/v1/objects/remote-replications?replicationType='+str(replicationType)))
 
-    #get ldevs
+    #get all ldevs
     def ldevs_get(self, ldevNumberDec=None, count=100):
         #max ldevs 16384
         request_type='GET'
@@ -593,7 +680,7 @@ class RestAPI:
             if str(ldevNumberDec).isnumeric():
                 return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ldevs/'+str(ldevNumberDec)))
             else:
-                return('ERROR: response: ldevNumber "'+str(ldevNumber)+'" is not a decimal ldev number')
+                return('ERROR: response: ldevNumber[dec] "'+str(ldevNumberDec)+'" is not a decimal ldev number')
 
     #get snapshots
     def snapshots_get(self, ldevNumber=None):
