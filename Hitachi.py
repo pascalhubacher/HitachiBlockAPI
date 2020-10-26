@@ -20,7 +20,7 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 
 # create formatter
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(funcName)s - [%(levelname)s] - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(module)s - %(lineno)d - %(funcName)s - %(message)s')
 
 # add formatter to ch
 ch.setFormatter(formatter)
@@ -567,8 +567,6 @@ class RestAPI:
 
         return(luns)      
 
-        #return(self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/luns?portId='+portId+'&hostGroupNumber='+str(hostGroupId)+'&isBasicLunInformation=false&lunOption=ALUA'))
-    
     #get the wwns of one hostgroups of one port
     def wwns_get(self, portId_hostGroupId):
         #/ConfigurationManager/v1/objects/host-wwns?portId=CL1-A&hostGroupNumber=0"
