@@ -170,6 +170,7 @@ class RestAPI:
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(return_response)
 
+    #execute in all functions
     def _general_execute(self):
         start = time.time()
         #set StorageDeviceId if not already set
@@ -303,8 +304,7 @@ class RestAPI:
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             logger.error('ERROR: response:'+str(return_response))
             return(-1)
-
-    
+   
     #create session
     def _session_create(self):
         '''
@@ -757,6 +757,42 @@ class RestAPI:
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(wwns)
 
+    #get the wwns of one hostgroups of one port
+    def wwns_one_port_get(self, portId):
+        start = time.time()
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        #get all hostgroups of a port
+        return_response = self.host_groups_one_port_get(portId=portId)
+        logger.debug('Request response: ' + str(return_response))
+
+        wwns = {}
+        logger.info('Number of storage hostgroups of port ('+ str(portId) +'): ' + str(len(return_response)))
+        i = 0
+        for hostGroup in return_response:
+            i += 1
+            logger.info(str(hostGroup) + ' hostgroup ' + str(i) + 'of' + str(len(return_response)))
+            logger.debug('Hostgroup raw data:'+str(return_response[hostGroup]))
+
+            return_response_wwns = self.wwns_get(portId_hostGroupId=hostGroup)
+            logger.debug('Request response: ' + str(return_response_wwns))
+            if return_response_wwns == None:
+                #ignore hostgroup -> no wwn(s) in this hostgroup
+                pass
+            else:
+                for wwn in return_response_wwns:
+                    wwns[lun] = return_response_wwns[wwn]
+        
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        if len(wwns) == 0:    
+            return(None)
+        else:
+            return(wwns)
+
     #get resource group
     def resource_group_get(self):
         start = time.time()
@@ -803,8 +839,8 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
 
-        logger.debug('Request string: '+str(self.__url_base+self.__url_storages + str(self._storage_device_id) + '/resource-groups'))
-        return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages + str(self._storage_device_id) + '/resource-groups')
+        logger.debug('Request string: '+str(self.__url_base+self.__url_storages + '/' + str(self._storage_device_id) + '/resource-groups'))
+        return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages + '/' + str(self._storage_device_id) + '/resource-groups')
         logger.debug('Request response: ' + str(return_response))
 
         end = time.time()
