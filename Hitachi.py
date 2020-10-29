@@ -793,6 +793,34 @@ class RestAPI:
         else:
             return(wwns)
 
+    #get the wwns of one hostgroups of one port
+    def wwns_all_ports_get(self):
+        start = time.time()
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        #get all portIds
+        return_response = self.ports_get()
+        logger.debug('Request response: ' + str(return_response))
+
+        wwns = {}
+        
+        i = 0
+        for port in return_response:               
+            #host group infos
+            logger.info(port)
+            return_response_wwns = self.wwns_one_port_get(portId=port)
+            logger.debug('Request response: ' + str(return_response_wwns))
+            if not return_response_wwns == None:
+                for wwn in return_response_wwns:
+                    wwns[wwn] = return_response_wwns[wwn]
+
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(wwns)
+
     #get resource group
     def resource_group_get(self):
         start = time.time()
