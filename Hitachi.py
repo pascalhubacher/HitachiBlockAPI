@@ -32,7 +32,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # The current version of this library.
-VERSION = "0.9.0"
+VERSION = "0.9.1"
 
 class RestAPI:
     '''This Class can be used to : '''
@@ -932,16 +932,16 @@ class RestAPI:
         self._general_execute()
         
         if ldevNumberDec == None:
-            logger.debug('Request string: '+str(self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ldevs?count='+str(count)))
-            return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ldevs?count='+str(count))
+            logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count)))
+            return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count))
             logger.debug('Request response: ' + str(return_response))
             end = time.time()
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(return_response)
         else:
             if str(ldevNumberDec).isnumeric():
-                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ldevs/'+str(ldevNumberDec)))
-                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/ldevs/'+str(ldevNumberDec))
+                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumberDec)))
+                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumberDec))
                 logger.debug('Request response: ' + str(return_response))
                 end = time.time()
                 logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
