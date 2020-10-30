@@ -23,7 +23,7 @@ ch.setLevel(logging.DEBUG)
 # create formatter
 #2020-10-27 08:24:01,160 - DEBUG - Hitachi.py - line+522 - luns_one_port_get - Message
 #formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - line+%(lineno)d - %(funcName)s - %(message)s')
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(lineno)d - %(funcName)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - line+%(lineno)d - %(funcName)s - %(message)s')
 
 # add formatter to ch
 ch.setFormatter(formatter)
@@ -32,7 +32,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # The current version of this library.
-VERSION = "0.0.2"
+VERSION = "0.9.0"
 
 class RestAPI:
     '''This Class can be used to : '''
@@ -733,31 +733,39 @@ class RestAPI:
         [{'hostWwnId': 'CL1-B,6,2400000087805858', 'portId': 'CL1-B', 'hostGroupNumber': 6, 'hostGroupName': 'CB500_Blade4_pepalma', 'hostWwn': '2400000087805858', 'wwnNickname': 'pepalma'}]
         '''
 
-        #Internal Error (no hostgroup on port)
-        if return_response[0] == -1:
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(None)
-
         #No WWN found in hostgroup
         if return_response == None:
             logger.warning('Warning: No WWN found in Hostgroup '+str(portId_hostGroupId))
             end = time.time()
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(None)
-        else:
-            wwns = {}
-            #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
-            i = 0
-            for wwn in return_response:
-                i += 1
-                wwns[wwn[self.__json_hostWwnId]] = wwn
-            
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(wwns)
 
-    #get the wwns of one hostgroups of one port
+        #Internal Error (no hostgroup on port)
+        if isinstance(return_response, (list,)):
+            if isinstance(return_response[0], (int,)):
+                if return_response[0] == -1:
+                    logger.error('error message :'+str(return_response))
+                    end = time.time()
+                    logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+                    return(None)
+                else:
+                    logger.error('Unknown error')
+                    end = time.time()
+                    logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+                    return(return_response)
+
+        wwns = {}
+        #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
+        i = 0
+        for wwn in return_response:
+            i += 1
+            wwns[wwn[self.__json_hostWwnId]] = wwn
+        
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(wwns)
+
+    #get the wwns of all hostgroups of one port
     def wwns_one_port_get(self, portId):
         start = time.time()
         request_type='GET'
@@ -784,7 +792,7 @@ class RestAPI:
                 pass
             else:
                 for wwn in return_response_wwns:
-                    wwns[lun] = return_response_wwns[wwn]
+                    wwns[wwn] = return_response_wwns[wwn]
         
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
@@ -793,7 +801,7 @@ class RestAPI:
         else:
             return(wwns)
 
-    #get the wwns of one hostgroups of one port
+    #get the wwns of all hostgroups of all ports
     def wwns_all_ports_get(self):
         start = time.time()
         request_type='GET'
