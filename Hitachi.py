@@ -11,6 +11,7 @@ import ssl
 from base64 import b64encode
 import logging
 import time
+import uuid
 
 # create logger
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # The current version of this library.
-VERSION = "0.9.1"
+VERSION = "0.9.5"
 
 class RestAPI:
     '''This Class can be used to : '''
@@ -46,9 +47,16 @@ class RestAPI:
         self._token = None
         self._session_id = None
         self.__url_base = '/ConfigurationManager/v1/objects'
+        self.__url_base_ConfigurationManager = '/ConfigurationManager'
+        self.__url_base_v1 = '/v1'
+        self.__url_base_objects = '/objects'
+        self.__url_resource_lock = '/services/resource-group-service/actions/lock/invoke'
+        self.__url_resource_unlock = '/services/resource-group-service/actions/unlock/invoke'
         self.__url_storages = '/storages'
         self.__url_jobs = '/jobs'
         self.__url_sessions = '/sessions'
+        self.__url_ports = '/ports'
+        self.__url_pools = '/pools'
         self.__url_remotereplication = '/remote-replications'
         self.__url_snapshotgroups = '/snapshot-groups'
         self.__url_snapshotsall = '/snapshot-replications'
@@ -57,7 +65,11 @@ class RestAPI:
         self.__json_token = 'token'
         self.__json_sessionId = 'sessionId'
         self.__json_hostWwnId = 'hostWwnId'
+        self.__json_ldevId = 'ldevId'
         self.__json_remoteReplicationId = 'remoteReplicationId'
+        self.__json_snapshotGroupName = 'snapshotGroupName'
+        self.__json_snapshotId = 'snapshotId' #if you specify an ldev in the request url
+        self.__json_snapshotReplicationId = 'snapshotReplicationId' #if you do not specify an ldev
         
         #self.__maxConnectionsParallelTotal = 8
         #self.__maxConnectionsParallelGet = 6
@@ -123,14 +135,14 @@ class RestAPI:
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_response)
     
-    #general get part
-    def _general_get(self, request_type, url_suffix=None):
+    #general webrequest that creates/deletes sessions
+    def _general_webrequest(self, request_type, url_suffix=None, body=''):
         start = time.time()
 
         #create session token
         self._session_create()
         
-        return_response = self._webrequest(request_type=request_type, url_suffix=url_suffix)
+        return_response = self._webrequest(request_type=request_type, url_suffix=url_suffix, body=body)
 
         if len(return_response) == 3:
             if return_response[0] == 0:
@@ -398,14 +410,14 @@ class RestAPI:
         self._session_create()
 
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_jobs))
-        return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_jobs)       
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_jobs)       
         logger.debug('Request response: ' + str(return_response))
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_response)
         
     #get last job
-    def _jobs_get_last(self):
+    def _jobs_last_get(self):
         '''
         '''
         start = time.time()
@@ -424,7 +436,7 @@ class RestAPI:
             return(return_response[0])
     
     #get job by id
-    def _jobs_get_by_jobid(self, jobId=None):
+    def _jobs_by_id_get(self, jobId=None):
         '''
         '''
         start = time.time()
@@ -452,6 +464,129 @@ class RestAPI:
     
         #get host groups of one port
     
+    #lock the resource
+    #not done
+    def resource_lock(self, waitTime=None):
+        start = time.time()
+        request_type='PUT'
+
+        #execute general procedures
+        self._general_execute()
+        
+        #set the default if it is not set or it is not a numeric value
+        if waitTime == None or not (str(waitTime).isnumeric()):
+            waitTime = 30
+
+        body = '''
+        {
+          "parameters": {
+            "waitTime": '''+str(waitTime)+'''
+          }
+        }
+        '''
+        #lock the resources
+        logger.debug('Request string: '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+'/'+str(self._storage_device_id)+str(self.__url_resource_lock))
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+'/'+str(self._storage_device_id)+str(self.__url_resource_lock), body=body)
+        logger.debug('Request response: ' + str(return_response))
+
+        return(return_response)
+
+    #unlook the resource
+    #not done
+    def resource_unlock(self):
+        return()
+
+    #get resource group information
+    def resource_group_get(self):
+        start = time.time()
+        request_type='GET'
+        
+        '''
+        {
+            "data": [
+                {
+                "resourceGroupId": 0,
+                "resourceGroupName": "meta_resource",
+                "lockStatus": "Unlocked",
+                "virtualStorageId": 0,
+                "ldevIds": [
+                    0,
+                    4
+                ],
+                "parityGroupIds": [
+                    "1-1",
+                    "5-5"
+                ],
+                "externalParityGroupIds": [
+                    "10-2"
+                ],
+                "portIds": [
+                    "CL1-A",
+                    "CL3-A"
+                   ],
+                "hostGroupIds": [
+                    "CL3-A,0",
+                    "CL3-A,1"
+                ]
+            },
+            {
+                "resourceGroupId": 1,
+                "resourceGroupName": "VSM55555",
+                "lockStatus": "Unlocked",
+                "virtualStorageId": 2,
+                "ldevIds": [
+            ...
+            }
+        '''
+   
+        #execute general procedures
+        self._general_execute()
+
+        logger.debug('Request string: '+str(self.__url_base+self.__url_storages + '/' + str(self._storage_device_id) + '/resource-groups'))
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages + '/' + str(self._storage_device_id) + '/resource-groups')
+        logger.debug('Request response: ' + str(return_response))
+
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(return_response)
+
+    #get pools
+    def pools_get(self, poolId=None):
+        start = time.time()
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        if poolId == None:
+            #get the information of all ports
+            logger.debug('Request string: '+str(self.__url_base)+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_pools))
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_pools))
+            logger.debug('Request response: ' + str(return_response))
+        else:
+            if str(poolId).isnumeric():
+                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_pools)+'/'+str(poolId)))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_pools)+'/'+str(poolId))
+                logger.debug('Request response: ' + str(return_response))
+            else:
+                logger.error('Pool Id is not a number ('+str(poolId)+'). Must be between 0 and 127')
+                return(-1)
+
+        #if it is not a list then make it to one with one element
+        if not isinstance(return_response, (list,)):
+            return_response = [return_response]
+
+        pools = {}
+        i = 0
+        for pool in return_response:
+            i += 1
+            pools[str(pool['poolId'])] = {}
+            pools[str(pool['poolId'])] = pool
+        
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(pools)
+
     #get ports
     def ports_get(self, portId=None, logins=None):
         start = time.time()
@@ -475,22 +610,22 @@ class RestAPI:
         if not (portId == None):
             if logins == None:
                 #get the information of all ports
-                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ports?portId='+str(portId)))
-                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ports?portId='+str(portId))
+                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId)))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId))
                 logger.debug('Request response: ' + str(return_response))
             else:
-                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ports?portId='+str(portId)+'detailInfoType=logins'))
-                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ports?portId='+str(portId)+'detailInfoType=logins')
+                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId)+'detailInfoType=logins'))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId)+'detailInfoType=logins')
                 logger.debug('Request response: ' + str(return_response))
         else:
             if logins == None:
                 #
-                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ports'))
-                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ports')
+                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports))
                 logger.debug('Request response: ' + str(return_response))
             else:
-                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ports?detailInfoType=logins'))
-                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ports?detailInfoType=logins')
+                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?detailInfoType=logins'))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?detailInfoType=logins')
                 logger.debug('Request response: ' + str(return_response))
 
         ports = {}
@@ -524,7 +659,7 @@ class RestAPI:
                        'isDefined': True}}
         '''
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup'))
-        return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup')
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup')
         logger.debug('Request response: ' + str(return_response))
 
         hostGroups = {}
@@ -597,7 +732,7 @@ class RestAPI:
         logger.debug('Port:'+str(port)+' hostgroup: '+ str(hostgroup))
 
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/luns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup)+'&isBasicLunInformation=false&lunOption=ALUA'))
-        return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/luns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup)+'&isBasicLunInformation=false&lunOption=ALUA')
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/luns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup)+'&isBasicLunInformation=false&lunOption=ALUA')
         logger.debug('Request response: ' + str(return_response))
 
         #No LUN found in hostgroup
@@ -700,7 +835,6 @@ class RestAPI:
         logger.debug('Request response: ' + str(return_response))
 
         luns = {}
-        
         i = 0
         for port in return_response:               
             #host group infos
@@ -727,7 +861,7 @@ class RestAPI:
         port, hostgroup = portId_hostGroupId.split(',')
 
         logger.debug('Request string: '+str(self.__url_base+'/host-wwns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup)))
-        return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+'/host-wwns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup))
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+'/host-wwns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup))
         logger.debug('Request response: ' + str(return_response))
 
         '''
@@ -814,8 +948,8 @@ class RestAPI:
         return_response = self.ports_get()
         logger.debug('Request response: ' + str(return_response))
 
+        #create dictionary out of the data
         wwns = {}
-        
         i = 0
         for port in return_response:               
             #host group infos
@@ -830,60 +964,6 @@ class RestAPI:
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(wwns)
 
-    #get resource group
-    def resource_group_get(self):
-        start = time.time()
-        request_type='GET'
-        
-        '''
-        {
-            "data": [
-                {
-                "resourceGroupId": 0,
-                "resourceGroupName": "meta_resource",
-                "lockStatus": "Unlocked",
-                "virtualStorageId": 0,
-                "ldevIds": [
-                    0,
-                    4
-                ],
-                "parityGroupIds": [
-                    "1-1",
-                    "5-5"
-                ],
-                "externalParityGroupIds": [
-                    "10-2"
-                ],
-                "portIds": [
-                    "CL1-A",
-                    "CL3-A"
-                   ],
-                "hostGroupIds": [
-                    "CL3-A,0",
-                    "CL3-A,1"
-                ]
-            },
-            {
-                "resourceGroupId": 1,
-                "resourceGroupName": "VSM55555",
-                "lockStatus": "Unlocked",
-                "virtualStorageId": 2,
-                "ldevIds": [
-            ...
-            }
-        '''
-   
-        #execute general procedures
-        self._general_execute()
-
-        logger.debug('Request string: '+str(self.__url_base+self.__url_storages + '/' + str(self._storage_device_id) + '/resource-groups'))
-        return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages + '/' + str(self._storage_device_id) + '/resource-groups')
-        logger.debug('Request response: ' + str(return_response))
-
-        end = time.time()
-        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-        return(return_response)
-
     #get all replication configuration
     def replication_get(self, replicationType=None):
         start = time.time()
@@ -892,39 +972,39 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
 
-        replication = {}
-
         if replicationType == None:
             logger.debug('Request string: '+str(self.__url_base+self.__url_remotereplication))
-            return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_remotereplication)
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_remotereplication)
             logger.debug('Request response: ' + str(return_response))
-            
-            for repl in return_response:
-                    replication[repl[self.__json_remoteReplicationId]] = repl
-            
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(replication)
         else:
             if str(replicationType) in ['GAD', 'UR', 'TC']:
                 logger.debug('Request string: '+str(self.__url_base+self.__url_remotereplication+'?replicationType='+str(replicationType)))
-                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_remotereplication+'?replicationType='+str(replicationType))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_remotereplication+'?replicationType='+str(replicationType))
                 logger.debug('Request response: ' + str(return_response))
-                
-                for repl in return_response:
-                    replication[repl[self.__json_remoteReplicationId]] = repl
-                
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(replication)
             else:
                 logger.error('ERROR: the replicationType ('+str(replicationType)+') is not supported. Specify "GAD", "UR", "TC".')
                 end = time.time()
                 logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
                 return(-1)
 
+        #if it is not a list then make it to one with one element
+        if not isinstance(return_response, (list,)):
+            return_response = [return_response]
+
+        #create dictionary out of the data
+        replications = {}
+        #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
+        i = 0
+        for replication in return_response:
+            i += 1
+            replications[replication[self.__json_remoteReplicationId]] = replication
+        
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(replications)
+
     #get all ldevs or a specifig ldev
-    def ldevs_get(self, ldevNumberDec=None, count=16384):
+    def ldevs_get(self, ldevNumber=None, count=16384):
         start = time.time()
         #max ldevs 16384
         request_type='GET'
@@ -932,50 +1012,70 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
         
-        if ldevNumberDec == None:
+        if ldevNumber == None:
             logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count)))
-            return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count))
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count))
             logger.debug('Request response: ' + str(return_response))
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(return_response)
         else:
-            if str(ldevNumberDec).isnumeric():
-                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumberDec)))
-                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumberDec))
+            if str(ldevNumber).isnumeric():
+                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber)))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber))
                 logger.debug('Request response: ' + str(return_response))
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(return_response)
             else:
-                logger.error('ERROR: response: ldevNumber[dec] "'+str(ldevNumberDec)+'" is not a decimal ldev number')
+                logger.error('ERROR: response: ldevNumber[dec] "'+str(ldevNumber)+'" is not a decimal ldev number')
                 end = time.time()
                 logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
                 return(-1)
 
+        #if it is not a list then make it to one with one element
+        if not isinstance(return_response, (list,)):
+            return_response = [return_response]
+
+        #create dictionary out of the data
+        ldevs = {}
+        #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
+        i = 0
+        for ldev in return_response:
+            i += 1
+            ldevs[ldev[self.__json_ldevId]] = ldev
+        
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(ldevs)
+        
     #get snapshotgroups or a specific snapshotgroup
-    def snapshotgroups_get(self, snapshotGroupId=None):
+    def snapshotgroups_get(self, snapshotGroupName=None):
         start = time.time()
         request_type='GET'
 
         #execute general procedures
         self._general_execute()
 
-        if snapshotGroupId == None:
+        if snapshotGroupName == None:
             logger.debug('Request string: '+str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+str(self.__url_snapshotgroups))
-            return_response = self._general_get(request_type=request_type, url_suffix=str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+str(self.__url_snapshotgroups))
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+str(self.__url_snapshotgroups))
             logger.debug('Request response: ' + str(return_response))
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(return_response)
         else:
-            logger.debug('Request string: '+str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+self.__url_snapshotgroups+'/'+str(snapshotGroupId))
-            return_response = self._general_get(request_type=request_type, url_suffix=str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+self.__url_snapshotgroups+'/'+str(snapshotGroupId))
+            logger.debug('Request string: '+str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+self.__url_snapshotgroups+'/'+str(snapshotGroupName))
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+self.__url_snapshotgroups+'/'+str(snapshotGroupName))
             logger.debug('Request response: ' + str(return_response))
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(return_response)
-            
+        
+        #if it is not a list then make it to one with one element
+        if not isinstance(return_response, (list,)):
+            return_response = [return_response]
+        
+        #create dictionary out of the data
+        snapshotgroups = {}
+        #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
+        i = 0
+        for snapshotgroup in return_response:
+            i += 1
+            snapshotgroups[snapshotgroup[self.__json_snapshotGroupName]] = snapshotgroup
+        
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(snapshotgroups)
+
     #get all snapshots or the snapshots of a specific ldev
     def snapshots_get(self, ldevNumber=None):
         start = time.time()
@@ -985,29 +1085,41 @@ class RestAPI:
         self._general_execute()
 
         if ldevNumber == None:
-            #logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_snapshotgroups))
-            #return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshot-groups')
             logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_snapshotsall))
-            return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_snapshotsall)
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_snapshotsall)
             logger.debug('Request response: ' + str(return_response))
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(return_response)
         else:
             if str(ldevNumber).isnumeric():
                 logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber)))
-                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber))
                 logger.debug('Request response: ' + str(return_response))
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(return_response)
             else:
                 logger.error('ERROR: response: ldevNumber "'+str(ldevNumber)+'" is not a number.')
                 end = time.time()
                 logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
                 return(-1)
+
+        #if it is not a list then make it to one with one element
+        if not isinstance(return_response, (list,)):
+            return_response = [return_response]
+
+        #create dictionary out of the data
+        snapshots = {}
+        #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
+        i = 0
+        for snapshot in return_response:
+            i += 1
+            if self.__json_snapshotReplicationId in snapshot:
+                snapshots[snapshot[self.__json_snapshotReplicationId]] = snapshot          
+            else:
+                snapshots[snapshot[self.__json_snapshotId]] = snapshot                
+        
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(snapshots)
     
     #create snapshots
+    #not done
     def snapshots_create(self, pvolLdevId=None, snapshotGroupName=None, snapshotPoolId=None, isClone=False, isConsistencyGroup=True,
                         autoSplit=True):
         
@@ -1020,15 +1132,6 @@ class RestAPI:
         #create session token
         self._session_create()
         
-        body = json.dumps({"snapshotGroupName": str(snapshotGroupName),
-                   "snapshotPoolId": str(snapshotPoolId),
-                   "pvolLdevId": str(pvolLdevId),
-                   "isClone": isClone,
-                   "isConsistencyGroup": isConsistencyGroup,
-                   "autoSplit": autoSplit,
-                   "isDataReductionForceCopy": True
-                  })
-        
         if pvolLdevId == None:
             logger.error('ERROR: response: You must specify a pvolLdevId.')
             end = time.time()
@@ -1036,6 +1139,31 @@ class RestAPI:
             return(-1)
         else:
             if str(pvolLdevId).isnumeric():
+                #if no snapshotgroup is specified the create a uuid4 RFC4122 string
+                if snapshotGroupName==None:
+                    #snapshotgroup string can be at max 32 characters
+                    #create uuid4.hex (RFC 4122) string -> 'aa77aba4d3484b358fd509a43b9b44ab' 32 chars
+                    snapshotGroupName = str(uuid.uuid4().hex)
+                
+                body = '''
+                {
+                "snapshotGroupName": "snapshotGroup",
+                "snapshotPoolId": 5,
+                "pvolLdevId": 3555,
+                "isConsistencyGroup": true,
+                "autoSplit": true
+                }
+                '''
+
+                body = '''{"snapshotGroupName": str(snapshotGroupName),
+                   "snapshotPoolId": str(snapshotPoolId),
+                   "pvolLdevId": str(pvolLdevId),
+                   "isClone": isClone,
+                   "isConsistencyGroup": isConsistencyGroup,
+                   "autoSplit": autoSplit,
+                   "isDataReductionForceCopy": True
+                  }'''
+
                 logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshots', body=body))
                 return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshots', body=body)
                 logger.debug('Request response: ' + str(return_response))
@@ -1067,6 +1195,7 @@ class RestAPI:
             return(-1)
     
     #resync snapshots
+    #not done
     def snapshots_resync(self, snapshotGroupName=None, autoSplit=True):
         start = time.time()
         request_type='PUT'
@@ -1111,8 +1240,9 @@ class RestAPI:
             end = time.time()
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(-1)
-    
+
     #delete snapshots
+    #not done
     def snapshots_delete(self, snapshotGroupName=None):
         start = time.time()
         request_type='DELETE'
