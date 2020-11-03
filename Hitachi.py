@@ -51,6 +51,7 @@ class RestAPI:
         self.__url_sessions = '/sessions'
         self.__url_remotereplication = '/remote-replications'
         self.__url_snapshotgroups = '/snapshot-groups'
+        self.__url_snapshotsall = '/snapshot-replications'
         self.__json_data = 'data'
         self.__json_storage_device_id = 'storageDeviceId'
         self.__json_token = 'token'
@@ -922,7 +923,7 @@ class RestAPI:
                 logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
                 return(-1)
 
-    #get all ldevs
+    #get all ldevs or a specifig ldev
     def ldevs_get(self, ldevNumberDec=None, count=16384):
         start = time.time()
         #max ldevs 16384
@@ -952,7 +953,30 @@ class RestAPI:
                 logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
                 return(-1)
 
-    #get snapshots
+    #get snapshotgroups or a specific snapshotgroup
+    def snapshotgroups_get(self, snapshotGroupId=None):
+        start = time.time()
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        if snapshotGroupId == None:
+            logger.debug('Request string: '+str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+str(self.__url_snapshotgroups))
+            return_response = self._general_get(request_type=request_type, url_suffix=str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+str(self.__url_snapshotgroups))
+            logger.debug('Request response: ' + str(return_response))
+            end = time.time()
+            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+            return(return_response)
+        else:
+            logger.debug('Request string: '+str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+self.__url_snapshotgroups+'/'+str(snapshotGroupId))
+            return_response = self._general_get(request_type=request_type, url_suffix=str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+self.__url_snapshotgroups+'/'+str(snapshotGroupId))
+            logger.debug('Request response: ' + str(return_response))
+            end = time.time()
+            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+            return(return_response)
+            
+    #get all snapshots or the snapshots of a specific ldev
     def snapshots_get(self, ldevNumber=None):
         start = time.time()
         request_type='GET'
@@ -961,16 +985,18 @@ class RestAPI:
         self._general_execute()
 
         if ldevNumber == None:
-            logger.debug('Request string: '+str(self.__url_base+self.__url_storages+str(self._storage_device_id)+self.__url_snapshotgroups))
-            return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/snapshot-groups')
+            #logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_snapshotgroups))
+            #return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshot-groups')
+            logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_snapshotsall))
+            return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_snapshotsall)
             logger.debug('Request response: ' + str(return_response))
             end = time.time()
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(return_response)
         else:
             if str(ldevNumber).isnumeric():
-                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber)))
-                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber))
+                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber)))
+                return_response = self._general_get(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber))
                 logger.debug('Request response: ' + str(return_response))
                 end = time.time()
                 logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
@@ -1010,8 +1036,8 @@ class RestAPI:
             return(-1)
         else:
             if str(pvolLdevId).isnumeric():
-                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+str(self._storage_device_id)+'/snapshots', body=body))
-                return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+str(self._storage_device_id)+'/snapshots', body=body)
+                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshots', body=body))
+                return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshots', body=body)
                 logger.debug('Request response: ' + str(return_response))
             else:
                 logger.error('ERROR: response: pvolLdevId "'+str(pvolLdevId)+'" is not a valid number.')
@@ -1061,8 +1087,8 @@ class RestAPI:
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(-1)
         else:
-            logger.debug('Request string: '+str(self.__url_base+self.__url_storages+self._storage_device_id+self.__url_snapshotgroups+'/'+str(snapshotGroupName)+'/actions/resync/invoke', body=body))
-            return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+self._storage_device_id+self.__url_snapshotgroups+'/'+str(snapshotGroupName)+'/actions/resync/invoke', body=body)
+            logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_snapshotgroups+'/'+str(snapshotGroupName)+'/actions/resync/invoke', body=body))
+            return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_snapshotgroups+'/'+str(snapshotGroupName)+'/actions/resync/invoke', body=body)
             logger.debug('Request response: ' + str(return_response))
             
         if len(return_response) == 3:
@@ -1104,8 +1130,8 @@ class RestAPI:
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(-1)
         else:
-            logger.debug('Request string: '+str(self.__url_base+self.__url_storages+self._storage_device_id+self.__url_snapshotgroups+'/'+str(snapshotGroupName)))
-            return_response = self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+self._storage_device_id+self.__url_snapshotgroups+'/'+str(snapshotGroupName))
+            logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_snapshotgroups+'/'+str(snapshotGroupName)))
+            return_response = self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_snapshotgroups+'/'+str(snapshotGroupName))
             logger.debug('Request response: ' + str(return_response))
 
         if len(return_response) == 3:
