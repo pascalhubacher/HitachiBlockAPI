@@ -497,6 +497,7 @@ class RestAPI:
         return()
 
     #get resource group information
+    #not done
     def resource_group_get(self):
         start = time.time()
         request_type='GET'
@@ -640,6 +641,46 @@ class RestAPI:
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(ports)
+
+    #get all ldevs or a specifig ldev
+    def ldevs_get(self, ldevNumber=None, count=16384):
+        start = time.time()
+        #max ldevs 16384
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+        
+        if ldevNumber == None:
+            logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count)))
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count))
+            logger.debug('Request response: ' + str(return_response))
+        else:
+            if str(ldevNumber).isnumeric():
+                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber)))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber))
+                logger.debug('Request response: ' + str(return_response))
+            else:
+                logger.error('ERROR: response: ldevNumber[dec] "'+str(ldevNumber)+'" is not a decimal ldev number')
+                end = time.time()
+                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+                return(-1)
+
+        #if it is not a list then make it to one with one element
+        if not isinstance(return_response, (list,)):
+            return_response = [return_response]
+
+        #create dictionary out of the data
+        ldevs = {}
+        #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
+        i = 0
+        for ldev in return_response:
+            i += 1
+            ldevs[ldev[self.__json_ldevId]] = ldev
+        
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(ldevs)
 
     #get hostgroups of one port
     def host_groups_one_port_get(self, portId):
@@ -1002,46 +1043,6 @@ class RestAPI:
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(replications)
-
-    #get all ldevs or a specifig ldev
-    def ldevs_get(self, ldevNumber=None, count=16384):
-        start = time.time()
-        #max ldevs 16384
-        request_type='GET'
-
-        #execute general procedures
-        self._general_execute()
-        
-        if ldevNumber == None:
-            logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count)))
-            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count))
-            logger.debug('Request response: ' + str(return_response))
-        else:
-            if str(ldevNumber).isnumeric():
-                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber)))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber))
-                logger.debug('Request response: ' + str(return_response))
-            else:
-                logger.error('ERROR: response: ldevNumber[dec] "'+str(ldevNumber)+'" is not a decimal ldev number')
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(-1)
-
-        #if it is not a list then make it to one with one element
-        if not isinstance(return_response, (list,)):
-            return_response = [return_response]
-
-        #create dictionary out of the data
-        ldevs = {}
-        #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
-        i = 0
-        for ldev in return_response:
-            i += 1
-            ldevs[ldev[self.__json_ldevId]] = ldev
-        
-        end = time.time()
-        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-        return(ldevs)
         
     #get snapshotgroups or a specific snapshotgroup
     def snapshotgroups_get(self, snapshotGroupName=None):
