@@ -7,7 +7,8 @@ Also the responses are formatted in JSON so can easily select or search for spec
 ## Available functions
 ### General
 _storage_device_id_get(self)
-_storage_device_id_set(self, element_number=0)
+_jobs_by_id_get(self, jobId=None)
+_jobs_last_get(self)
 ### Resource Group
 resource_lock(self, waitTime=None)
 resource_unlock(self)
