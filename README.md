@@ -12,7 +12,7 @@ _storage_device_id_set(self, element_number=0)
 resource_lock(self, waitTime=None)
 resource_unlock(self)
 ### Pools
-pools_get
+pools_get(self, poolId=None)
 ### LDEVs
 ldevs_get(self, ldevNumber=None, count=16384)
 ### Ports
