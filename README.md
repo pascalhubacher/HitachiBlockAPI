@@ -25,13 +25,13 @@ ports_get(self, portId=None, logins=None)
 host_groups_one_port_get(self, portId)
 
 host_groups_all_ports_get(self)
-### lUNs
+### LUNs
 luns_get(self, portId_hostGroupId)
 
 luns_one_port_get(self, portId)
 
 luns_all_ports_get(self)
-### 
+### WWNs
 wwns_get(self, portId_hostGroupId)
 
 wwns_one_port_get(self, portId)
