@@ -6,14 +6,14 @@ https://knowledge.hitachivantara.com/Documents/Management_Software/Configuration
 
 <h2>Load RestAPI class</h2>
 #If you have a Hitachi.py file in the same directory that contains the RestAPI class<br />
-from Hitachi import RestAPI
-#import the logger of the Hitachi.py Module
-from Hitachi import logger
-#import the logging module to specify the logging level
-import logging
-#set logging level
-logger.setLevel(logging.INFO)
-#logger.setLevel(logging.DEBUG)
+from Hitachi import RestAPI<br />
+#import the logger of the Hitachi.py Module<br />
+from Hitachi import logger<br />
+#import the logging module to specify the logging level<br />
+import logging<br />
+#set logging level<br />
+logger.setLevel(logging.INFO)<br />
+#logger.setLevel(logging.DEBUG)<br />
 ip = '10.10.10.10'<br />
 rest = RestAPI(storage_fqdn_ip=ip, username='[user]', password='[password]')<br />
 
