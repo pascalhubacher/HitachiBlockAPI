@@ -7,10 +7,13 @@ Also the responses are formatted in JSON so can easily select or search for spec
 ## Available functions
 ### General
 _storage_device_id_get(self)
+
 _jobs_by_id_get(self, jobId=None)
+
 _jobs_last_get(self)
 ### Resource Group
 resource_lock(self, waitTime=None)
+
 resource_unlock(self)
 ### Pools
 pools_get(self, poolId=None)
@@ -20,22 +23,31 @@ ldevs_get(self, ldevNumber=None, count=16384)
 ports_get(self, portId=None, logins=None)
 ### Host Groups
 host_groups_one_port_get(self, portId)
+
 host_groups_all_ports_get(self)
 ### lUNs
 luns_get(self, portId_hostGroupId)
+
 luns_one_port_get(self, portId)
+
 luns_all_ports_get(self)
 ### 
-wwns_get(self, portId_hostGroupId):
+wwns_get(self, portId_hostGroupId)
+
 wwns_one_port_get(self, portId)
+
 wwns_all_ports_get(self)
 ### Replication
 replication_get(self, replicationType=None)
 ### Snapshots / Cloning
 snapshotgroups_get(self, snapshotGroupName=None)
+
 snapshots_get(self, ldevNumber=None)
+
 snapshots_create(self, pvolLdevId=None, snapshotGroupName=None, snapshotPoolId=None, isClone=False, isConsistencyGroup=True, autoSplit=True)
+
 snapshots_resync(self, snapshotGroupName=None, autoSplit=True)
+
 snapshots_delete(self, snapshotGroupName=None)
 
 ## Manual
