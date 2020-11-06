@@ -33,7 +33,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # The current version of this library.
-VERSION = "0.9.5"
+VERSION = "0.9.6"
 
 class RestAPI:
     '''This Class can be used to : '''
@@ -217,6 +217,51 @@ class RestAPI:
                     "svpIp": "10.70.4.145"
                 }
             ]
+        }
+        '''
+        if len(return_response) == 3:
+            if return_response[0] == 0:
+                #success
+                end = time.time()
+                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+                return(return_response[2][self.__json_data])
+            else:
+                logger.warning('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
+                end = time.time()
+                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+                return(None)
+        else:
+            logger.error('ERROR: response:'+str(return_response))
+            end = time.time()
+            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+            return(-1)
+
+    #gets the storge details ucode, ip
+    def storage_details_get(self):
+        start = time.time()
+        request_type = 'GET'
+        
+        #execute general procedures
+        self._general_execute()
+
+        logger.debug('Request string: '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+'/'+str(self._storage_device_id))
+        return_response=self._webrequest(request_type=request_type, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+'/'+str(self._storage_device_id))
+        logger.debug('Request response: ' + str(return_response))
+
+        '''
+        {
+            "storageDeviceId": "800000058068",
+            "model": "VSP G1000",
+            "serialNumber": 58068,
+            "svpIp": "10.70.4.145",
+            "rmiPort": 1099,
+            "dkcMicroVersion": "80-06-82/00",
+            "communicationModes": [
+            {
+                "communicationMode": "lanConnectionMode"
+            }
+            ],
+            "isSecure": true
         }
         '''
         if len(return_response) == 3:
