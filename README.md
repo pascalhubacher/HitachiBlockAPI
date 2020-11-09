@@ -40,15 +40,15 @@ Also the responses are formatted in JSON so can easily select or search for spec
 ### Replication
 `replication_get(self, replicationType=None)`
 ### Snapshots / Cloning
-snapshotgroups_get(self, snapshotGroupName=None)
+`snapshotgroups_get(self, snapshotGroupName=None)`
 
-snapshots_get(self, ldevNumber=None)
+`snapshots_get(self, ldevNumber=None)`
 
-snapshots_create(self, pvolLdevId=None, snapshotGroupName=None, snapshotPoolId=None, isClone=False, isConsistencyGroup=True, autoSplit=True)
+`snapshots_create(self, pvolLdevId=None, snapshotGroupName=None, snapshotPoolId=None, isClone=False, isConsistencyGroup=True, autoSplit=True)`
 
-snapshots_resync(self, snapshotGroupName=None, autoSplit=True)
+`snapshots_resync(self, snapshotGroupName=None, autoSplit=True)`
 
-snapshots_delete(self, snapshotGroupName=None)
+`snapshots_delete(self, snapshotGroupName=None)`
 
 ## Manual
 Please download the latest Hitachi Rest API documentation from:<br />
@@ -57,8 +57,7 @@ https://knowledge.hitachivantara.com/Documents/Management_Software/Configuration
 ## Coding
 ### Load RestAPI class
 #If you have a Hitachi.py file in the same directory as you run your python program<br />
-`from Hitachi import RestAPI`
-
+`from Hitachi import RestAPI`<br />
 `#import the logger of the Hitachi.py Module`<br />
 `from Hitachi import logger`<br />
 `#import the logging module to specify the logging level`<br />
