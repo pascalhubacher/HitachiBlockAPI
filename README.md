@@ -57,7 +57,7 @@ https://knowledge.hitachivantara.com/Documents/Management_Software/Configuration
 ## Coding
 <h2>Load RestAPI class</h2>
 #If you have a Hitachi.py file in the same directory as you run your python program<br />
-`from Hitachi import RestAPI`<br />
+`from Hitachi import RestAPI`
 `#import the logger of the Hitachi.py Module`<br />
 `from Hitachi import logger`<br />
 `#import the logging module to specify the logging level`<br />
