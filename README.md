@@ -10,35 +10,35 @@ Also the responses are formatted in JSON so can easily select or search for spec
 
 `_jobs_by_id_get(self, jobId=None)`
 
-_jobs_last_get(self)
+`_jobs_last_get(self)`
 ### Resource Group
-resource_lock(self, waitTime=None)
+`resource_lock(self, waitTime=None)`
 
-resource_unlock(self)
+`resource_unlock(self)`
 ### Pools
-pools_get(self, poolId=None)
+`pools_get(self, poolId=None)`
 ### LDEVs
-ldevs_get(self, ldevNumber=None, count=16384)
+`ldevs_get(self, ldevNumber=None, count=16384)`
 ### Ports
-ports_get(self, portId=None, logins=None)
+`ports_get(self, portId=None, logins=None)`
 ### Host Groups
-host_groups_one_port_get(self, portId)
+`host_groups_one_port_get(self, portId)`
 
-host_groups_all_ports_get(self)
+`host_groups_all_ports_get(self)`
 ### LUNs
-luns_get(self, portId_hostGroupId)
+`luns_get(self, portId_hostGroupId)`
 
-luns_one_port_get(self, portId)
+`luns_one_port_get(self, portId)`
 
-luns_all_ports_get(self)
+`luns_all_ports_get(self)`
 ### WWNs
-wwns_get(self, portId_hostGroupId)
+`wwns_get(self, portId_hostGroupId)`
 
-wwns_one_port_get(self, portId)
+`wwns_one_port_get(self, portId)`
 
-wwns_all_ports_get(self)
+`wwns_all_ports_get(self)`
 ### Replication
-replication_get(self, replicationType=None)
+`replication_get(self, replicationType=None)`
 ### Snapshots / Cloning
 snapshotgroups_get(self, snapshotGroupName=None)
 
@@ -57,9 +57,9 @@ https://knowledge.hitachivantara.com/Documents/Management_Software/Configuration
 ## Coding
 <h2>Load RestAPI class</h2>
 #If you have a Hitachi.py file in the same directory as you run your python program<br />
-from Hitachi import RestAPI<br />
-#import the logger of the Hitachi.py Module<br />
-from Hitachi import logger<br />
+`from Hitachi import RestAPI<br />`
+`#import the logger of the Hitachi.py Module<br />`
+`from Hitachi import logger<br />`
 #import the logging module to specify the logging level<br />
 import logging<br />
 #set logging level<br />
