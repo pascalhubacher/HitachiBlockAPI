@@ -66,4 +66,4 @@ https://knowledge.hitachivantara.com/Documents/Management_Software/Configuration
 `logger.setLevel(logging.INFO)`<br />
 `#logger.setLevel(logging.DEBUG)`<br />
 `ip = '10.10.10.10'`<br />
-`rest = RestAPI(storage_fqdn_ip=ip, username='[user]', password='[password]')`<br />
+`storage = RestAPI(storage_fqdn_ip=ip, username='[user]', password='[password]')`<br />
