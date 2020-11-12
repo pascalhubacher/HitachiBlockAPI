@@ -7,6 +7,7 @@ Also the responses are formatted in JSON so can easily select or search for spec
 ## Available functions
 ### General
 Get the ucode, IP and other details of the storage
+
 `storage_details_get(self)`
 
 `_storage_device_id_get(self)`
