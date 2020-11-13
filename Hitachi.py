@@ -244,8 +244,8 @@ class RestAPI:
         #execute general procedures
         self._general_execute()
 
-        logger.debug('Request string: '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+'/'+str(self._storage_device_id))
-        return_response=self._webrequest(request_type=request_type, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+'/'+str(self._storage_device_id))
+        logger.debug('Request string: '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id))
+        return_response=self._webrequest(request_type=request_type, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id))
         logger.debug('Request response: ' + str(return_response))
 
         '''
