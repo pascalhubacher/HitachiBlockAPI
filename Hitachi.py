@@ -6,6 +6,7 @@ parameters that can be passed can be found in the REST API guide.
 """
 
 import http.client
+import socket
 import json
 import ssl
 from base64 import b64encode
@@ -75,7 +76,7 @@ class RestAPI:
         #self.__maxConnectionsParallelGet = 6
     
     #extecutes the web request
-    def _webrequest(self, request_type='GET', url_suffix=None, body=''):
+    def _webrequest(self, request_type='GET', url_suffix=None, body='', timeout:int=30):
         '''Return the json response of the webrequest'''
         start = time.time()
         
@@ -97,13 +98,21 @@ class RestAPI:
             headers = {'Accept':'application/json', 'Content-Type':'application/json', 'Authorization' : 'Session '+str(self._token)}
 
         #create https connection, unverified connection
-        connection = http.client.HTTPSConnection(self._ip_fqdn, context=ssl._create_unverified_context())
+        connection = http.client.HTTPSConnection(self._ip_fqdn, context=ssl._create_unverified_context(), timeout=timeout)
 
-        # Send request
-        connection.request(method=request_type, url=url, headers=headers, body=body)
+        try:
+            # Send request
+            connection.request(method=request_type, url=url, headers=headers, body=body)
+            # Get the response
+            response = connection.getresponse()
+        except socket.timeout as st:
+            logger.error('ERROR: http(s) timeout received after '+str(timeout)+'sec. : '+str(st))
+            return([-1, 'ERROR: http(s) timeout received after '+str(timeout)+'sec.', st])
+        except http.client.HTTPException as e:
+            # other kind of error occured during request
+            logger.error('ERROR: HTTPException: '+str(e))
+            return([-1, 'ERROR: HTTPException', st])
         
-        # Get the response
-        response = connection.getresponse()
         # Display the response status
         #print()
         #print ("Status = ", response.status)
@@ -248,35 +257,25 @@ class RestAPI:
         return_response=self._webrequest(request_type=request_type, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id))
         logger.debug('Request response: ' + str(return_response))
 
-        '''
-        {
-            "storageDeviceId": "800000058068",
-            "model": "VSP G1000",
-            "serialNumber": 58068,
-            "svpIp": "10.70.4.145",
-            "rmiPort": 1099,
-            "dkcMicroVersion": "80-06-82/00",
-            "communicationModes": [
-            {
-                "communicationMode": "lanConnectionMode"
-            }
-            ],
-            "isSecure": true
-        }
-        '''
         if len(return_response) == 3:
             if return_response[0] == 0:
                 #success
                 end = time.time()
                 logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(return_response[2][self.__json_data])
+                return(return_response[2])
             else:
-                logger.warning('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(None)
+                if return_response[0] == -1:
+                    logger.error('ERROR: response:'+str(return_response))
+                    end = time.time()
+                    logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+                    return(-1)
+                else:
+                    logger.Error('ERROR: unknown error - response:'+str(return_response))
+                    end = time.time()
+                    logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+                    return(None)
         else:
-            logger.error('ERROR: response:'+str(return_response))
+            logger.error('ERROR: unknown error - response:'+str(return_response))
             end = time.time()
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(-1)
