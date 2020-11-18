@@ -56,7 +56,7 @@ Get the ucode, IP and other details of the storage
 
 ## Manual
 Please download the latest Hitachi Rest API documentation from:<br />
-https://knowledge.hitachivantara.com/Documents/Management_Software/Configuration_Manager_REST_API<br />
+https://knowledge.hitachivantara.com/Documents/Management_Software/Ops_Center/API_Configuration_Manager<br />
 
 ## Coding
 ### Load RestAPI class
