@@ -61,7 +61,7 @@ https://knowledge.hitachivantara.com/Documents/Management_Software/Ops_Center/AP
 ## Coding
 ### Load RestAPI class
 #If you have a Hitachi.py file in the same directory as you run your python program<br />
-If you directly contact the storage SVP or the GUM then use port 443<br />
+If you directly contact the storage SVP or the GUM then use port 443. But this is the default so you do not have to specify it.<br />
 If you use the Configuration RestAPI / Ops Center API then use port 23451<br />
 `from Hitachi import RestAPI`<br />
 `#import the logger of the Hitachi.py Module`<br />
@@ -71,5 +71,4 @@ If you use the Configuration RestAPI / Ops Center API then use port 23451<br />
 `#set logging level`<br />
 `logger.setLevel(logging.INFO)`<br />
 `#logger.setLevel(logging.DEBUG)`<br />
-`ip = '10.10.10.10'`<br />
-`storage = RestAPI(storage_fqdn_ip='10.10.10.10', port=, username='[user]', password='[password]')`<br />
+`storage = RestAPI(storage_fqdn_ip='10.10.10.10', port=23451, username='[user]', password='[password]')`<br />
