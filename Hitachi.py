@@ -269,7 +269,7 @@ class RestAPI:
             return(-1)
 
     #register a storage in the Configuration Manager API
-    def storage_register(self, storage_fqdn_ip:str, cmrestapi_fqdn_ip:str=None, storage_port:str='443', cmrestapi_port:int=23451, username:str=None, password:str=None):
+    def storage_register(self, storage_fqdn_ip:str, cmrestapi_fqdn_ip:str=None, storage_port:str='443', cmrestapi_port:str='23451', username:str=None, password:str=None):
         #get storage details
         start = time.time()
         request_type = 'GET'
@@ -278,18 +278,56 @@ class RestAPI:
         self._token = None
         #set internal values if nothing is specified
         if username == None:
+            logger.debug('username set to: '+str(self._username))
             username = self._username
         if password == None:
+            logger.debug('password set to the value you set as you instanciated it.')
             password = self.__password
 
+        if cmrestapi_fqdn_ip == None:
+            logger.debug('cmrestapi_fqdn_ip set to: '+str(self._ip_fqdn))
+            cmrestapi_fqdn_ip = self._ip_fqdn
+
         #get storage device id
-        return_response=self._storage_details_get(fqdn_ip=storage_fqdn_ip, port=storage_port)
+        return_response=self.storage_details_get(fqdn_ip=storage_fqdn_ip, port=storage_port)
         
-        print(return_response)
+        '''
+        For VSP E series, VSP G350, G370, G700, G900, VSP F350, F370, F700, F900 with SVP
+        {  "ctl1Ip" : "192.0.10.10",  "ctl2Ip" : "192.0.10.11",  "model" : "VSP G900",   "serialNumber" : 123456,  "usesSvp" : true,  "svpIp" : "192.0.2.100" }
+        For VSP E series, VSP G350, G370, G700, G900, VSP F350, F370, F700, F900 without SVP
+        {  "ctl1Ip" : "192.0.10.10",  "ctl2Ip" : "192.0.10.11",  "model" : "VSP G900",   "serialNumber" : 123456,  "usesSvp" : false }
+        For storage systems VSP 5000 series, VSP G200, G400, G600, G800, VSP G1000,VSP G1500, VSP F400, F600, F800, VSP F1500, Virtual Storage Platform, orUnified Storage VM
+        { "model": "VSP G1000", "serialNumber": 50679, "svpIp": "10.70.5.145", "isSecure": true }
+        '''
 
+        #parse as json dictionary
+        storage_details = json.loads(return_response)
 
+        #create new body to register the storage
+        if str(storage_details['model']) in ['VSP E990', 'VSP G350', 'VSP G370', 'VSP G700', 'VSP G900', 'VSP F350', 'VSP F370', 'VSP F700', 'VSP F900']:
+            #"ctl1Ip",  "ctl2Ip", "model", "serialNumber"
+            body = {}
+            body['model'] = storage_details['model']
+            body['serialNumber'] = storage_details['serialNumber']
+            body['ctl1Ip'] = storage_details['ctl1Ip']
+            body['ctl2Ip'] = storage_details['ctl2Ip']
+            logger.debug('body: '+str(json.dumps(body)))
+        
+        if str(storage_details['model']) in ['VSP 5100', 'VSP 5500', 'VSP 5100H', 'VSP 5500H', 'VSP G200', 'VSP G400', 'VSP G600', 'VSP G800', 'VSP G1000', 'VSP G1500', 'VSP F400', 'VSP F600', 'VSP F800', 'VSP F1500', 'VSP N400', 'VSP N600', 'VSP N800', 'HUS VM', 'VSP']:
+            #model, serialNumber, svpIp, isSecure used
+            body = {}
+            body['model'] = storage_details['model']
+            body['serialNumber'] = storage_details['serialNumber']
+            body['svpIp'] = storage_details['svpIp']
+            body['isSecure'] = storage_details['isSecure']
+            logger.debug('body: '+str(json.dumps(body)))
+        else:
+            logger.error('storage model not supported ('+str(return_response['model'])+')')
+            return(-1)
+        
+        request_type = 'POST'
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages))
-        storage_device_id=self._webrequest(request_type=request_type, fqdn_ip=storage_fqdn_ip, port=storage_port, username=username, password=password, url_suffix=self.__url_base+self.__url_storages)
+        return_response=self._webrequest(request_type=request_type, fqdn_ip=cmrestapi_fqdn_ip, port=cmrestapi_port, username=username, password=password, body=json.dumps(body), url_suffix=self.__url_base+self.__url_storages)
         logger.debug('Request response: ' + str(return_response))
 
         if len(return_response) == 3:
