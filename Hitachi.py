@@ -35,7 +35,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # The current version of this library.
-VERSION = "0.9.6"
+VERSION = "0.9.7"
 
 class RestAPI:
     '''This Class can be used to : '''
