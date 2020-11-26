@@ -78,8 +78,57 @@ class RestAPI:
         #self.__maxConnectionsParallelTotal = 8
         #self.__maxConnectionsParallelGet = 6
     
+    #check if string is of json format
+    def __is_json(self, myjson:str):
+        try:
+            json_object = json.loads(myjson)
+        except ValueError as e:
+            return False
+        return True
+
+    #check the response
+    def __check_response(self, return_response:list, element_number:int=0, key:str=None):
+        if key == None:
+            key = self.__json_data
+        
+        return_value = None
+
+        if len(return_response) == 3:
+            if return_response[0] == 0:
+                if self.__is_json(return_response[2]):
+                    return_response_json = json.loads(return_response[2])
+                    #if you specify 'all' then the whole dictionary is sent back
+                    if key == 'all':
+                        return_value = json.dumps(return_response_json)
+                    else:
+                        #check if the key exists
+                        if key in return_response_json:
+                            if len(return_response_json[key]) == 0:
+                                logger.warning('the key "'+str(key)+'" is empty.')
+                                return_value = -1
+                            else:
+                                return_value = json.dumps(return_response_json[key])
+                        else:
+                            logger.error('the key you looked for "'+str(key)+'" does not exist in the dictionary.')
+                            return_value = -1
+                else:
+                    if str(return_response[2]) == '':
+                        logger.debug('empty response')
+                        return_value = None
+                    else:
+                        logger.error('ERROR: response:'+str(return_response))
+                        return_value = -1
+            else:
+                logger.warning('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
+                return_value = None
+        else:
+            logger.error('ERROR: response:'+str(return_response))
+            return_value = -1
+
+        return(return_value)
+
     #extecutes the web request
-    def _webrequest(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, request_type='GET', url_suffix=None, body='', timeout:int=30):
+    def _webrequest(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, request_type='GET', url_suffix=None, body=None, timeout:int=30):
         '''Return the json response of the webrequest'''
         start = time.time()
 
@@ -110,6 +159,12 @@ class RestAPI:
             logger.debug('token ('+str(self._token)+') is used')
             headers = {'Accept':'application/json', 'Content-Type':'application/json', 'Authorization' : 'Session '+str(self._token)}
 
+        #convert the body to json format string if it is a dictionary
+        if not body == None:
+            if type(body) == str:
+                if not self.__is_json:
+                    body = json.dumps(body)
+
         #create https connection, unverified connection
         connection = http.client.HTTPSConnection(fqdn_ip+':'+port, context=ssl._create_unverified_context(), timeout=timeout)
 
@@ -119,7 +174,10 @@ class RestAPI:
             logger.debug('headers: '+ str(headers))
             logger.debug('body: '+ str(body))
             logger.debug('URL: '+ str(url))
-            connection.request(method=request_type, url=url, headers=headers, body=body)
+            if body == None:
+                connection.request(method=request_type, url=url, headers=headers)
+            else:
+                connection.request(method=request_type, url=url, headers=headers, body=body)
             # Get the response
             response = connection.getresponse()
         except socket.timeout as st:
@@ -136,24 +194,15 @@ class RestAPI:
         # 200 Ok
         # 202 Accepted The request has been accepted for processing, but the processing has not been completed.
         logger.debug('request response status: '+ str(response.status))
+        json_response_string = str(response.read(), encoding='utf8').replace('\r', '').replace('\n','')
         if response.status == http.client.OK or response.status == http.client.ACCEPTED:
-            #print("connection successful!")
-            #read the json bytes
-            json_response_bytes = response.read()
-            #print(json_response_bytes)
-            #convert the json response to a utf-8 string
-            json_response_string = str(json_response_bytes, encoding='utf8')
-            #convet the string into python json
             if not len(json_response_string) == 0:
-                return_response = json.loads(json_response_string)
-                return_response = [0, response.status, return_response]
+                return_response = [0, response.status, json_response_string]
             else:
                 return_response = [0, response.status, '']
         else:
-            #print()
-            #print('Server response:', response.status, '-', response.reason)
-            logger.error('Internal Error:')
-            return_response = [-1, response.status, response.reason]
+            logger.error('Got error back. status: '+ str(response.status)+' - reason: '+str(response.reason))
+            return_response = [-1, response.status, json_response_string]
             
         #close connection
         connection.close()
@@ -221,8 +270,34 @@ class RestAPI:
 
         return(None)
 
+    #gets the storge elements
+    def storage_systems_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None):
+        start = time.time()
+        request_type = 'GET'
+
+        #set token to None so user and password is used
+        self._token = None
+        #set internal values if nothing is specified
+        if username == None:
+            username = self._username
+        if password == None:
+            password = self.__password
+        if fqdn_ip == None:
+            fqdn_ip = self._ip_fqdn
+        if port == None:
+            port = self._port
+
+        logger.debug('Request string: '+str(self.__url_base+self.__url_storages))
+        return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=self.__url_base+self.__url_storages)
+        logger.debug('Request response: ' + str(return_response))
+
+        return_response = self.__check_response(return_response=return_response)
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(return_response)
+
     #gets the storge details ucode, ip
-    def storage_details_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None,element_number:int=0):
+    def storage_details_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=0):
         start = time.time()
         request_type = 'GET'
         
@@ -239,34 +314,16 @@ class RestAPI:
             password = self.__password
 
         #get StorageDeviceId
-        storage_device_id = self._storage_device_id_get(fqdn_ip=fqdn_ip, port=port, username=username, element_number=0)
+        storage_device_id = self._storage_device_id_get(fqdn_ip=fqdn_ip, port=port, username=username, element_number=element_number)
 
         logger.debug('Request string: '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id))
         return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(storage_device_id))
         logger.debug('Request response: ' + str(return_response))
 
-        if len(return_response) == 3:
-            if return_response[0] == 0:
-                #success
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(json.dumps(return_response[2]))
-            else:
-                if return_response[0] == -1:
-                    logger.error('ERROR: response:'+str(return_response))
-                    end = time.time()
-                    logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                    return(-1)
-                else:
-                    logger.Error('ERROR: unknown error - response:'+str(return_response))
-                    end = time.time()
-                    logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                    return(None)
-        else:
-            logger.error('ERROR: unknown error - response:'+str(return_response))
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(-1)
+        return_response = self.__check_response(return_response=return_response, element_number=element_number, key='all')
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(return_response)
 
     #register a storage in the Configuration Manager API
     def storage_register(self, storage_fqdn_ip:str, cmrestapi_fqdn_ip:str=None, storage_port:str='443', cmrestapi_port:str='23451', username:str=None, password:str=None):
@@ -300,9 +357,11 @@ class RestAPI:
         { "model": "VSP G1000", "serialNumber": 50679, "svpIp": "10.70.5.145", "isSecure": true }
         '''
 
-        #parse as json dictionary
-        storage_details = json.loads(return_response)
-
+        #parse json string to dictionary
+        if self.__is_json(return_response):
+            #parse as json dictionary
+            storage_details = json.loads(return_response)
+        
         #create new body to register the storage
         if str(storage_details['model']) in ['VSP E990', 'VSP G350', 'VSP G370', 'VSP G700', 'VSP G900', 'VSP F350', 'VSP F370', 'VSP F700', 'VSP F900']:
             #"ctl1Ip",  "ctl2Ip", "model", "serialNumber"
@@ -311,7 +370,6 @@ class RestAPI:
             body['serialNumber'] = storage_details['serialNumber']
             body['ctl1Ip'] = storage_details['ctl1Ip']
             body['ctl2Ip'] = storage_details['ctl2Ip']
-            logger.debug('body: '+str(json.dumps(body)))
         
         if str(storage_details['model']) in ['VSP 5100', 'VSP 5500', 'VSP 5100H', 'VSP 5500H', 'VSP G200', 'VSP G400', 'VSP G600', 'VSP G800', 'VSP G1000', 'VSP G1500', 'VSP F400', 'VSP F600', 'VSP F800', 'VSP F1500', 'VSP N400', 'VSP N600', 'VSP N800', 'HUS VM', 'VSP']:
             #model, serialNumber, svpIp, isSecure used
@@ -320,49 +378,17 @@ class RestAPI:
             body['serialNumber'] = storage_details['serialNumber']
             body['svpIp'] = storage_details['svpIp']
             body['isSecure'] = storage_details['isSecure']
-            logger.debug('body: '+str(json.dumps(body)))
         else:
             logger.error('storage model not supported ('+str(return_response['model'])+')')
             return(-1)
-        
+
+        #register storage        
         request_type = 'POST'
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages))
-        return_response=self._webrequest(request_type=request_type, fqdn_ip=cmrestapi_fqdn_ip, port=cmrestapi_port, username=username, password=password, body=json.dumps(body), url_suffix=self.__url_base+self.__url_storages)
+        return_response=self._webrequest(request_type=request_type, fqdn_ip=cmrestapi_fqdn_ip, port=cmrestapi_port, username=username, password=password, body=str(json.dumps(body)), url_suffix=self.__url_base+self.__url_storages)
         logger.debug('Request response: ' + str(return_response))
 
-        if len(return_response) == 3:
-            if return_response[0] == 0:
-                #check if no storage is registered the the data key has no elements
-                if len(return_response[2][self.__json_data]) == 0:
-                    logger.error('no storage is registerd. please the function storage_register to register a storage first.')
-                    # exits the program 
-                    sys.exit("Exit script.")
-                #success
-                logger.debug('set class variable "_storage_device_id" to "' + str(return_response[2][self.__json_data][0][self.__json_storage_device_id]) + '"')
-                storage_details = return_response[2]
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                storage_device_id = return_response[2][self.__json_data][0][self.__json_storage_device_id]
-            else:
-                logger.warning('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(None)
-        else:
-            logger.error('ERROR: response:'+str(return_response))
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(-1)
-
-        #get storage details
-        logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str()))
-        return_response=self._webrequest(request_type=request_type, fqdn_ip=storage_fqdn_ip, port=storage_port, username=username, password=password, url_suffix=self.__url_base+self.__url_storages)
-        logger.debug('Request response: ' + str(return_response))
-
-        
-        #Get storage detail data about the storage
-
-        return(None)
+        return(self.__check_response(return_response=return_response))
 
     #set storage device id        
     def _storage_device_id_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=0):
@@ -384,29 +410,20 @@ class RestAPI:
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages))
         return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=self.__url_base+self.__url_storages)
         logger.debug('Request response: ' + str(return_response))
-
-        if len(return_response) == 3:
-            if return_response[0] == 0:
-                #check if no storage is registered the the data key has no elements
-                if len(return_response[2][self.__json_data]) == 0:
-                    logger.error('no storage is registerd. please the function storage_register to register a storage first.')
-                    # exits the program 
-                    sys.exit("Exit script.")
-                #success
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(return_response[2][self.__json_data][int(element_number)][self.__json_storage_device_id])
-            else:
-                logger.warning('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(None)
+        
+        #check the response for errors
+        return_response = self.__check_response(return_response=return_response, element_number=element_number)
+        if self.__is_json(return_response):
+            return_response = json.loads(return_response)
+            end = time.time()
+            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+            return(return_response[element_number][self.__json_storage_device_id])
         else:
-            logger.error('ERROR: response:'+str(return_response))
+            logger.error('the response was not in json format.')
             end = time.time()
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(-1)
-    
+          
     #set storage device id        
     def _storage_device_id_set(self, element_number=0):
         #get storage device id
@@ -440,28 +457,18 @@ class RestAPI:
             ]
         }
         '''
-        if len(return_response) == 3:
-            if return_response[0] == 0:
-                #success
-                #self._storage_device_id = return_response[2]['data'][int(element_number)]['storageDeviceId']
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(return_response[2][self.__json_data])
-            else:
-                logger.warning('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")                
-                return(None)
-        else:
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            logger.error('ERROR: response:'+str(return_response))
-            return(-1)
+        return_response = self.__check_response(return_response=return_response)
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(return_response)
    
     #create session
     def _session_create(self):
         '''
         '''
+
+        return_value = None
+
         start = time.time()
         request_type='POST'
 
@@ -480,30 +487,29 @@ class RestAPI:
         -> [0, 200, {'token': '74014a6e-a4b2-4b87-8021-de0ef3e92bde', 'sessionId': 3}]
         '''
 
-        if len(return_response) == 3:
-            if return_response[0] == 0:
-                #success
-                #print(return_response)
-                self._token = return_response[2][self.__json_token]
-                self._session_id = return_response[2][self.__json_sessionId]
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return[return_response[2]]
-            else:
-                logger.warning('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(None)
+        return_response = self.__check_response(return_response=return_response, key='all')
+        if self.__is_json(return_response):
+            return_response = json.loads(return_response)
+            logger.debug('token: ' + str(return_response[self.__json_token]))
+            self._token = return_response[self.__json_token]
+            logger.debug('session id: ' + str(return_response[self.__json_sessionId]))
+            self._session_id = return_response[self.__json_sessionId]
+            return_value = None
         else:
-            logger.error('ERROR: response:'+str(return_response))
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(-1)
+            logger.error('the response was not in json format.')
+            return_value = -1
+        
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(return_value)
         
     #delete session
     def _session_delete(self):
         '''
         '''
+
+        return_value = None
+
         start = time.time()
         request_type='DELETE'
 
@@ -517,24 +523,14 @@ class RestAPI:
             return_response = self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_sessions+'/'+str(self._session_id))
             logger.debug('Request response: ' + str(return_response))
 
-            if len(return_response) == 3:
-                if return_response[0] == 0:
-                    #success
-                    self._token=None
-                    self._session_id=None
-                    end = time.time()
-                    logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                    return(return_response)
-                else:
-                    end = time.time()
-                    logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                    logger.warning('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
-                    return(None)
-            else:
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                logger.error('ERROR: response:'+str(return_response))
-                return(-1)
+            return_response = self.__check_response(return_response=return_response, key='all')
+            self._token = None
+            self._session_id = None
+            return_value = None
+                    
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(return_value)
     
     #get jobs
     def _jobs_get(self):
