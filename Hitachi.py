@@ -95,37 +95,43 @@ class RestAPI:
 
         if len(return_response) == 3:
             if return_response[0] == 0:
-                if self.__is_json(return_response[2]):
+                if self.__is_json(str(return_response[2])):
+                    logger.debug('output is of type json string')
                     return_response_json = json.loads(return_response[2])
                     #if you specify 'all' then the whole dictionary is sent back
                     if key == 'all':
-                        return_value = json.dumps(return_response_json)
+                        logger.debug('key "all" selected')
+                        return(json.dumps(return_response_json))
                     else:
                         #check if the key exists
                         if key in return_response_json:
                             if len(return_response_json[key]) == 0:
                                 logger.warning('the key "'+str(key)+'" is empty.')
-                                return_value = -1
+                                return(None)
                             else:
-                                return_value = json.dumps(return_response_json[key])
+                                logger.debug('key "'+str(key)+'" selected')
+                                #is it a list then keep the list type
+                                if isinstance(return_response_json[key], list):
+                                    return(return_response_json[key])
+                                else:
+                                    #create string
+                                    return(json.dumps(return_response_json[key]))
                         else:
                             logger.error('the key you looked for "'+str(key)+'" does not exist in the dictionary.')
-                            return_value = -1
+                            return(-1)
                 else:
                     if str(return_response[2]) == '':
                         logger.debug('empty response')
-                        return_value = None
+                        return(None)
                     else:
                         logger.error('ERROR: response:'+str(return_response))
-                        return_value = -1
+                        return(-1)
             else:
                 logger.warning('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
-                return_value = None
+                return(None)
         else:
             logger.error('ERROR: response:'+str(return_response))
-            return_value = -1
-
-        return(return_value)
+            return(-1)
 
     #extecutes the web request
     def _webrequest(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, request_type:str='GET', url_suffix:str=None, body:str=None, timeout:int=30):
@@ -194,15 +200,15 @@ class RestAPI:
         # 200 Ok
         # 202 Accepted The request has been accepted for processing, but the processing has not been completed.
         logger.debug('request response status: '+ str(response.status))
-        json_response_string = str(response.read(), encoding='utf8').replace('\r', '').replace('\n','')
+        response_string = str(response.read(), encoding='utf8').replace('\r', '').replace('\n','')
         if response.status == http.client.OK or response.status == http.client.ACCEPTED:
-            if not len(json_response_string) == 0:
-                return_response = [0, response.status, json_response_string]
+            if not len(response_string) == 0:
+                return_response = [0, response.status, response_string]
             else:
                 return_response = [0, response.status, '']
         else:
             logger.error('Got error back. status: '+ str(response.status)+' - reason: '+str(response.reason))
-            return_response = [-1, response.status, json_response_string]
+            return_response = [-1, response.status, response_string]
             
         #close connection
         connection.close()
@@ -383,16 +389,9 @@ class RestAPI:
         
         #check the response for errors
         return_response = self.__check_response(return_response=return_response, element_number=element_number)
-        if self.__is_json(return_response):
-            return_response = json.loads(return_response)
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(return_response[element_number][self.__json_storage_device_id])
-        else:
-            logger.error('the response was not in json format.')
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(-1)
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(return_response[element_number][self.__json_storage_device_id])
           
     #set storage device id        
     def _storage_device_id_set(self, element_number=0):
@@ -402,6 +401,92 @@ class RestAPI:
         logger.debug('set class variable "_storage_device_id" to "' + str(return_response) + '"')
         self._storage_device_id = return_response
         return(None)
+    
+        #get jobs
+    
+    #get jobs
+    def _jobs_get(self):
+        '''
+        {
+        "data": [
+            {
+            "jobId": 43,
+            "self": "/ConfigurationManager/v1/objects/storages/800000058068/jobs/43",
+            "userId": "user",
+            "status": "Completed",
+            "state": "Succeeded",
+            "createdTime": "2020-11-16T15:20:17Z",
+            "updatedTime": "2020-11-16T15:20:19Z",
+            "completedTime": "2020-11-16T15:20:19Z",
+            "request": {
+                "requestUrl": "/ConfigurationManager/v1/objects/storages/800000058068/ldevs/40962",
+                "requestMethod": "DELETE",
+                "requestBody": ""
+            },
+            "affectedResources": [
+                "/ConfigurationManager/v1/objects/storages/800000058068/ldevs/40962"
+            ]
+            },
+        '''
+        start = time.time()
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_jobs))
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_jobs)
+        
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(return_response)
+        
+    #get last job
+    def _jobs_last_get(self):
+        '''
+        '''
+        start = time.time()
+
+        return_response = self._jobs_get()
+
+        if return_response == None:
+            logger.warning('WARNING: no job found')
+            end = time.time()
+            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+            return(None)
+        else:
+            end = time.time()
+            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+            return(return_response[0])
+    
+    #get job by id
+    def _jobs_by_id_get(self, jobId=None):
+        '''
+        '''
+        start = time.time()
+        return_value = None
+
+        return_response = self._jobs_get()
+        logger.debug('Request response: ' + str(return_response))
+
+        if not jobId == None:
+            for job in return_response:
+                if str(job['jobId']) == str(jobId):
+                    return_value = job
+            
+            #if the job id was not found in the list
+            if return_value == None:
+                logger.error('ERROR: response: jobId: "'+str(jobId)+'" is not found. Please specify an existing jobId.')
+                return_value = -1
+        else:
+            logger.error('ERROR: response: jobId is "None". Please specify a valid jobId.')
+            logger.info('all jobs are sent back')
+            return_value = return_response
+
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(return_value)
+        #get host groups of one port
     
     #get session id
     def _session_get(self):
@@ -437,7 +522,6 @@ class RestAPI:
     def _session_create(self):
         '''
         '''
-
         return_value = None
 
         start = time.time()
@@ -479,7 +563,6 @@ class RestAPI:
     def _session_delete(self):
         '''
         '''
-
         return_value = None
 
         start = time.time()
@@ -504,71 +587,6 @@ class RestAPI:
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_value)
-    
-    #get jobs
-    def _jobs_get(self):
-        '''
-        '''
-        start = time.time()
-        request_type='GET'
-
-        #execute general procedures
-        self._general_execute()
-
-        logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_jobs))
-        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_jobs)       
-        logger.debug('Request response: ' + str(return_response))
-        end = time.time()
-        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-        return(return_response)
-        
-    #get last job
-    def _jobs_last_get(self):
-        '''
-        '''
-        start = time.time()
-
-        return_response = self._jobs_get()
-        logger.debug('Request response: ' + str(return_response))
-
-        if return_response == None:
-            logger.warning('WARNING: no job found')
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(None)
-        else:
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(return_response[0])
-    
-    #get job by id
-    def _jobs_by_id_get(self, jobId=None):
-        '''
-        '''
-        start = time.time()
-
-        return_response = self._jobs_get()
-        logger.debug('Request response: ' + str(return_response))
-
-        if not jobId == None:
-            for job in return_response:
-                if str(job['jobId']) == str(jobId):
-                    end = time.time()
-                    logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                    return(job)
-            
-            logger.error('ERROR: response: jobId: "'+str(jobId)+'" is not found. Please specify an existing jobId.')
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(-1)
-        else:
-            logger.error('ERROR: response: jobId is "None". Please specify a valid jobId.')
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(-1)
-    
-    
-        #get host groups of one port
     
     #lock the resource
     #not done
@@ -603,7 +621,6 @@ class RestAPI:
         return()
 
     #get resource group information
-    #not done
     def resource_group_get(self, timeout:int=180):
         start = time.time()
         request_type='GET'
@@ -655,7 +672,7 @@ class RestAPI:
 
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-        return(return_response)
+        return(json.dumps(return_response[0]))
 
     #get pools
     def pools_get(self, poolId=None, timeout:int=30):
@@ -671,37 +688,42 @@ class RestAPI:
             logger.debug('Request string: '+str(self.__url_base)+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_pools))
             return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_pools))
             logger.debug('Request response: ' + str(return_response))
+            if isinstance(return_response, list):
+                pools = {}
+                i = 0
+                for pool in return_response:
+                    i += 1
+                    pools[str(pool['poolId'])] = {}
+                    pools[str(pool['poolId'])] = pool
+                return_value = pools
+            else:
+                logger.error('Response is not a list. output: '+ str(return_response))
+                return_value = -1
         else:
             if str(poolId).isnumeric():
                 logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_pools)+'/'+str(poolId)))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_pools)+'/'+str(poolId))
+                return_response = self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_pools)+'/'+str(poolId))
+                return_response = self.__check_response(return_response=return_response, key='all')
                 logger.debug('Request response: ' + str(return_response))
+                if self.__is_json(return_response):
+                    return_response = json.loads(return_response)
+                    pools = {}
+                    pools[str(return_response['poolId'])] = {}
+                    pools[str(return_response['poolId'])] = return_response
+                    return_value = pools
             else:
                 logger.error('Pool Id is not a number ('+str(poolId)+'). Must be between 0 and 127')
                 return_value = -1
+        
 
-        #parse json string to dictionary
-        if self.__is_json(return_response):
-            #parse as json dictionary
-            return_response = json.loads(return_response)
-
-            pools = {}
-            i = 0
-            for pool in return_response:
-                i += 1
-                pools[str(pool['poolId'])] = {}
-                pools[str(pool['poolId'])] = pool
-            return_value = pools
-        else:
-            logger.error('Response is not in JSON format. output: '+ str(return_response))
-            return_value = -1
+        
         
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_value)
 
     #get ports
-    def ports_get(self, portId=None, logins=None, timeout:int=30):
+    def ports_get(self, portId=None, logins:bool=True, timeout:int=60):
         start = time.time()
         request_type='GET'
 
@@ -720,36 +742,40 @@ class RestAPI:
                       'wwn': '50060e8007e2d400'}}
         '''
 
-        if not (portId == None):
-            if logins == None:
-                #get the information of all ports
-                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId)))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId), timeout=timeout)
-                logger.debug('Request response: ' + str(return_response))
+        if portId == None:
+            #get the information of all ports
+            if logins == True:
+                logger.debug('Request string: '+self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_ports+'?detailInfoType=logins')
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_ports+'?detailInfoType=logins', timeout=timeout)
             else:
-                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId)+'detailInfoType=logins'))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId)+'detailInfoType=logins', timeout=timeout)
-                logger.debug('Request response: ' + str(return_response))
-        else:
-            if logins == None:
-                #
                 logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports), timeout=timeout)
-                logger.debug('Request response: ' + str(return_response))
-            else:
-                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?detailInfoType=logins'))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?detailInfoType=logins', timeout=timeout)
-                logger.debug('Request response: ' + str(return_response))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_ports, timeout=timeout)
 
-        ports = {}
-        #print('Number of storage ports:', len(return_response))
-        i = 0
-        for port in return_response:
-            i += 1
-            #print(str(port['portId']), 'port ' + str(i) + 'of' + str(len(return_response)))
-            ports[str(port['portId'])] = {}
-            ports[str(port['portId'])] = port
-        
+            logger.debug('Request response: ' + str(return_response))
+            if isinstance(return_response, list):
+                ports = {}
+                i = 0
+                for port in return_response:
+                    i += 1
+                    ports[str(port['portId'])] = {}
+                    ports[str(port['portId'])] = port
+                return_value = ports
+            else:
+                logger.error('Response is not a list. output: '+ str(return_response))
+                return_value = -1
+        else:
+            #just one specifig port, login info not available. but class info available
+            logger.debug('Request string: '+self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_ports+'/'+str(portId)+'?detailInfoType=class')
+            return_response = self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'/'+str(portId)+'?detailInfoType=class', timeout=timeout)
+            return_response = self.__check_response(return_response=return_response, key='all')
+            logger.debug('Request response: ' + str(return_response))
+            if self.__is_json(return_response):
+                return_response = json.loads(return_response)
+                ports = {}
+                ports[str(return_response['portId'])] = {}
+                ports[str(return_response['portId'])] = return_response
+                return_value = ports
+         
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(ports)
