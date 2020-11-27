@@ -128,7 +128,7 @@ class RestAPI:
         return(return_value)
 
     #extecutes the web request
-    def _webrequest(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, request_type='GET', url_suffix=None, body=None, timeout:int=30):
+    def _webrequest(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, request_type:str='GET', url_suffix:str=None, body:str=None, timeout:int=30):
         '''Return the json response of the webrequest'''
         start = time.time()
 
@@ -211,52 +211,21 @@ class RestAPI:
         return(return_response)
     
     #general webrequest that creates/deletes sessions
-    def _general_webrequest(self, request_type, url_suffix=None, body=''):
+    def _general_webrequest(self, request_type, url_suffix=None, body=None, timeout:int=30):
         start = time.time()
 
-        #create session token
-        self._session_create()
+        return_value = None
+
+        #create session token if not a GET request
+        if not request_type == 'GET':
+            self._session_create()
         
-        return_response = self._webrequest(request_type=request_type, url_suffix=url_suffix, body=body)
-
-        if len(return_response) == 3:
-            if return_response[0] == 0:
-                #success
-                
-                #remove session token
-                self._session_delete()
-
-                if not len(return_response[2]) == 0:
-                    #remove the data key
-                    if self.__json_data in return_response[2]:
-                        if not len(return_response[2][self.__json_data]) == 0:
-                            end = time.time()
-                            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                            return(return_response[2][self.__json_data])
-                        else:
-                            end = time.time()
-                            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                            return(None)
-                    else:
-                        #no list
-                        end = time.time()
-                        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                        return(return_response[2])
-                else:
-                    end = time.time()
-                    logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                    return(None)
-                    
-            else:
-                logger.warning('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]), ', request:'+str(url_suffix))
-                end = time.time()
-                logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-                return(return_response)
-        else:
-            logger.error('ERROR: response:'+str(return_response))
-            end = time.time()
-            logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-            return(return_response)
+        #send request
+        return_response = self._webrequest(request_type=request_type, url_suffix=url_suffix, body=body, timeout=timeout)
+        return_response = self.__check_response(return_response=return_response)
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(return_response)
 
     #execute in all functions
     def _general_execute(self):
@@ -408,6 +377,7 @@ class RestAPI:
             port = self._port
 
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages))
+        #these requests do not use the general webrequest this function is part of it.
         return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=self.__url_base+self.__url_storages)
         logger.debug('Request response: ' + str(return_response))
         
@@ -442,6 +412,7 @@ class RestAPI:
         self._general_execute()
 
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_sessions))
+        #these requests do not use the general webrequest this function is part of it.
         return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_sessions)
         logger.debug('Request response: ' + str(return_response))
 
@@ -476,6 +447,7 @@ class RestAPI:
         self._general_execute()
 
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_sessions))
+        #these requests do not use the general webrequest this function is part of it.
         return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_sessions)
         logger.debug('Request response: ' + str(return_response))
 
@@ -520,6 +492,7 @@ class RestAPI:
             return('WARNING: nothing done as no session was created')
         else:
             logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_sessions+'/'+str(self._session_id)))
+            #these requests do not use the general webrequest this function is part of it.
             return_response = self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_sessions+'/'+str(self._session_id))
             logger.debug('Request response: ' + str(return_response))
 
@@ -541,9 +514,6 @@ class RestAPI:
 
         #execute general procedures
         self._general_execute()
-
-        #create session token
-        self._session_create()
 
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_jobs))
         return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_jobs)       
@@ -634,7 +604,7 @@ class RestAPI:
 
     #get resource group information
     #not done
-    def resource_group_get(self):
+    def resource_group_get(self, timeout:int=180):
         start = time.time()
         request_type='GET'
         
@@ -680,7 +650,7 @@ class RestAPI:
         self._general_execute()
 
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages + '/' + str(self._storage_device_id) + '/resource-groups'))
-        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages + '/' + str(self._storage_device_id) + '/resource-groups')
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages + '/' + str(self._storage_device_id) + '/resource-groups', timeout=timeout)
         logger.debug('Request response: ' + str(return_response))
 
         end = time.time()
@@ -688,8 +658,9 @@ class RestAPI:
         return(return_response)
 
     #get pools
-    def pools_get(self, poolId=None):
+    def pools_get(self, poolId=None, timeout:int=30):
         start = time.time()
+        return_value = None
         request_type='GET'
 
         #execute general procedures
@@ -707,25 +678,30 @@ class RestAPI:
                 logger.debug('Request response: ' + str(return_response))
             else:
                 logger.error('Pool Id is not a number ('+str(poolId)+'). Must be between 0 and 127')
-                return(-1)
+                return_value = -1
 
-        #if it is not a list then make it to one with one element
-        if not isinstance(return_response, (list,)):
-            return_response = [return_response]
+        #parse json string to dictionary
+        if self.__is_json(return_response):
+            #parse as json dictionary
+            return_response = json.loads(return_response)
 
-        pools = {}
-        i = 0
-        for pool in return_response:
-            i += 1
-            pools[str(pool['poolId'])] = {}
-            pools[str(pool['poolId'])] = pool
+            pools = {}
+            i = 0
+            for pool in return_response:
+                i += 1
+                pools[str(pool['poolId'])] = {}
+                pools[str(pool['poolId'])] = pool
+            return_value = pools
+        else:
+            logger.error('Response is not in JSON format. output: '+ str(return_response))
+            return_value = -1
         
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-        return(pools)
+        return(return_value)
 
     #get ports
-    def ports_get(self, portId=None, logins=None):
+    def ports_get(self, portId=None, logins=None, timeout:int=30):
         start = time.time()
         request_type='GET'
 
@@ -748,21 +724,21 @@ class RestAPI:
             if logins == None:
                 #get the information of all ports
                 logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId)))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId), timeout=timeout)
                 logger.debug('Request response: ' + str(return_response))
             else:
                 logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId)+'detailInfoType=logins'))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId)+'detailInfoType=logins')
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?portId='+str(portId)+'detailInfoType=logins', timeout=timeout)
                 logger.debug('Request response: ' + str(return_response))
         else:
             if logins == None:
                 #
                 logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports), timeout=timeout)
                 logger.debug('Request response: ' + str(return_response))
             else:
                 logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?detailInfoType=logins'))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?detailInfoType=logins')
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'?detailInfoType=logins', timeout=timeout)
                 logger.debug('Request response: ' + str(return_response))
 
         ports = {}
@@ -779,7 +755,7 @@ class RestAPI:
         return(ports)
 
     #get all ldevs or a specifig ldev
-    def ldevs_get(self, ldevNumber=None, count=16384):
+    def ldevs_get(self, ldevNumber=None, count=16384, timeout:int=30):
         start = time.time()
         #max ldevs 16384
         request_type='GET'
@@ -789,12 +765,12 @@ class RestAPI:
         
         if ldevNumber == None:
             logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count)))
-            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count))
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count), timeout=timeout)
             logger.debug('Request response: ' + str(return_response))
         else:
             if str(ldevNumber).isnumeric():
                 logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber)))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber), timeout=timeout)
                 logger.debug('Request response: ' + str(return_response))
             else:
                 logger.error('ERROR: response: ldevNumber[dec] "'+str(ldevNumber)+'" is not a decimal ldev number')
@@ -819,7 +795,7 @@ class RestAPI:
         return(ldevs)
 
     #get hostgroups of one port
-    def host_groups_one_port_get(self, portId):
+    def host_groups_one_port_get(self, portId, timeout:int=30):
         start = time.time()
         request_type='GET'
 
@@ -836,7 +812,7 @@ class RestAPI:
                        'isDefined': True}}
         '''
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup'))
-        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup')
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup', timeout=timeout)
         logger.debug('Request response: ' + str(return_response))
 
         hostGroups = {}
@@ -852,7 +828,7 @@ class RestAPI:
         return(hostGroups)
 
     #get host group of all ports
-    def host_groups_all_ports_get(self):
+    def host_groups_all_ports_get(self, timeout:int=30):
         start = time.time()
         request_type='GET'
 
@@ -869,7 +845,7 @@ class RestAPI:
         for port in return_response:               
             #host group infos
             logger.info(port)
-            return_response_hostgroup = self.host_groups_one_port_get(portId=port)
+            return_response_hostgroup = self.host_groups_one_port_get(portId=port, timeout=timeout)
             for hostgroup in return_response_hostgroup:
                 logger.info(hostgroup)
                 hostgroups[hostgroup] = return_response_hostgroup[hostgroup]
@@ -879,7 +855,7 @@ class RestAPI:
         return(hostgroups)
 
     #get luns of one hostgroup
-    def luns_get(self, portId_hostGroupId):
+    def luns_get(self, portId_hostGroupId, timeout:int=30):
         start = time.time()
         request_type='GET'
 
@@ -909,7 +885,7 @@ class RestAPI:
         logger.debug('Port:'+str(port)+' hostgroup: '+ str(hostgroup))
 
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/luns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup)+'&isBasicLunInformation=false&lunOption=ALUA'))
-        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/luns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup)+'&isBasicLunInformation=false&lunOption=ALUA')
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/luns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup)+'&isBasicLunInformation=false&lunOption=ALUA', timeout=timeout)
         logger.debug('Request response: ' + str(return_response))
 
         #No LUN found in hostgroup
@@ -971,7 +947,7 @@ class RestAPI:
         '''
 
         #get all hostgroups of a port
-        return_response = self.host_groups_one_port_get(portId=portId)
+        return_response = self.host_groups_one_port_get(portId=portId, timeout=timeout)
         logger.debug('Request response: ' + str(return_response))
 
         luns = {}
@@ -1000,7 +976,7 @@ class RestAPI:
             return(luns)
 
     #get the luns of all hostgroups of one port
-    def luns_all_ports_get(self):
+    def luns_all_ports_get(self, timeout:int=180):
         start = time.time()
         request_type='GET'
 
@@ -1016,7 +992,7 @@ class RestAPI:
         for port in return_response:               
             #host group infos
             logger.info(port)
-            return_response_luns = self.luns_one_port_get(portId=port)
+            return_response_luns = self.luns_one_port_get(portId=port, timeout=timeout)
             logger.debug('Request response: ' + str(return_response_luns))
             if not return_response_luns == None:
                 for lun in return_response_luns:
@@ -1027,7 +1003,7 @@ class RestAPI:
         return(luns)      
 
     #get the wwns of one hostgroups of one port
-    def wwns_get(self, portId_hostGroupId):
+    def wwns_get(self, portId_hostGroupId, timeout:int=30):
         start = time.time()
         request_type='GET'
 
@@ -1038,7 +1014,7 @@ class RestAPI:
         port, hostgroup = portId_hostGroupId.split(',')
 
         logger.debug('Request string: '+str(self.__url_base+'/host-wwns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup)))
-        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+'/host-wwns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup))
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+'/host-wwns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup), timeout=timeout)
         logger.debug('Request response: ' + str(return_response))
 
         '''
@@ -1078,7 +1054,7 @@ class RestAPI:
         return(wwns)
 
     #get the wwns of all hostgroups of one port
-    def wwns_one_port_get(self, portId):
+    def wwns_one_port_get(self, portId, timeout:int=30):
         start = time.time()
         request_type='GET'
 
@@ -1086,7 +1062,7 @@ class RestAPI:
         self._general_execute()
 
         #get all hostgroups of a port
-        return_response = self.host_groups_one_port_get(portId=portId)
+        return_response = self.host_groups_one_port_get(portId=portId, timeout=timeout)
         logger.debug('Request response: ' + str(return_response))
 
         wwns = {}
@@ -1097,7 +1073,7 @@ class RestAPI:
             logger.info(str(hostGroup) + ' hostgroup ' + str(i) + 'of' + str(len(return_response)))
             logger.debug('Hostgroup raw data:'+str(return_response[hostGroup]))
 
-            return_response_wwns = self.wwns_get(portId_hostGroupId=hostGroup)
+            return_response_wwns = self.wwns_get(portId_hostGroupId=hostGroup, timeout=timeout)
             logger.debug('Request response: ' + str(return_response_wwns))
             if return_response_wwns == None:
                 #ignore hostgroup -> no wwn(s) in this hostgroup
@@ -1114,7 +1090,7 @@ class RestAPI:
             return(wwns)
 
     #get the wwns of all hostgroups of all ports
-    def wwns_all_ports_get(self):
+    def wwns_all_ports_get(self, timeout:int=180):
         start = time.time()
         request_type='GET'
 
@@ -1131,7 +1107,7 @@ class RestAPI:
         for port in return_response:               
             #host group infos
             logger.info(port)
-            return_response_wwns = self.wwns_one_port_get(portId=port)
+            return_response_wwns = self.wwns_one_port_get(portId=port, timeout=timeout)
             logger.debug('Request response: ' + str(return_response_wwns))
             if not return_response_wwns == None:
                 for wwn in return_response_wwns:
@@ -1142,7 +1118,7 @@ class RestAPI:
         return(wwns)
 
     #get all replication configuration
-    def replication_get(self, replicationType=None):
+    def replication_get(self, replicationType=None, timeout:int=180):
         start = time.time()
         request_type='GET'
                 
@@ -1151,12 +1127,12 @@ class RestAPI:
 
         if replicationType == None:
             logger.debug('Request string: '+str(self.__url_base+self.__url_remotereplication))
-            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_remotereplication)
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_remotereplication, timeout=timeout)
             logger.debug('Request response: ' + str(return_response))
         else:
             if str(replicationType) in ['GAD', 'UR', 'TC']:
                 logger.debug('Request string: '+str(self.__url_base+self.__url_remotereplication+'?replicationType='+str(replicationType)))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_remotereplication+'?replicationType='+str(replicationType))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_remotereplication+'?replicationType='+str(replicationType), timeout=timeout)
                 logger.debug('Request response: ' + str(return_response))
             else:
                 logger.error('ERROR: the replicationType ('+str(replicationType)+') is not supported. Specify "GAD", "UR", "TC".')
@@ -1181,7 +1157,7 @@ class RestAPI:
         return(replications)
         
     #get snapshotgroups or a specific snapshotgroup
-    def snapshotgroups_get(self, snapshotGroupName=None):
+    def snapshotgroups_get(self, snapshotGroupName=None, timeout:int=30):
         start = time.time()
         request_type='GET'
 
@@ -1190,11 +1166,11 @@ class RestAPI:
 
         if snapshotGroupName == None:
             logger.debug('Request string: '+str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+str(self.__url_snapshotgroups))
-            return_response = self._general_webrequest(request_type=request_type, url_suffix=str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+str(self.__url_snapshotgroups))
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+str(self.__url_snapshotgroups), timeout=timeout)
             logger.debug('Request response: ' + str(return_response))
         else:
             logger.debug('Request string: '+str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+self.__url_snapshotgroups+'/'+str(snapshotGroupName))
-            return_response = self._general_webrequest(request_type=request_type, url_suffix=str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+self.__url_snapshotgroups+'/'+str(snapshotGroupName))
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+self.__url_snapshotgroups+'/'+str(snapshotGroupName), timeout=timeout)
             logger.debug('Request response: ' + str(return_response))
         
         #if it is not a list then make it to one with one element
@@ -1214,7 +1190,7 @@ class RestAPI:
         return(snapshotgroups)
 
     #get all snapshots or the snapshots of a specific ldev
-    def snapshots_get(self, ldevNumber=None):
+    def snapshots_get(self, ldevNumber=None, timeout:int=30):
         start = time.time()
         request_type='GET'
 
@@ -1223,12 +1199,12 @@ class RestAPI:
 
         if ldevNumber == None:
             logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_snapshotsall))
-            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_snapshotsall)
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_snapshotsall, timeout=timeout)
             logger.debug('Request response: ' + str(return_response))
         else:
             if str(ldevNumber).isnumeric():
                 logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber)))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/snapshots?pvolLdevId='+str(ldevNumber), timeout=timeout)
                 logger.debug('Request response: ' + str(return_response))
             else:
                 logger.error('ERROR: response: ldevNumber "'+str(ldevNumber)+'" is not a number.')
