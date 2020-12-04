@@ -31,7 +31,7 @@ def is_json(myjson:str):
 #PF REST API
 #storage = RestAPI(fqdn_ip=keyring.get_password('StorageRestAPI', 'StorageIp'), username='hup', password=keyring.get_password('StorageRestAPI', 'hup'))
 # Ops Center CM REST API
-storage = RestAPI(fqdn_ip=keyring.get_password('StorageRestAPI', 'OpsCenterIp'), port=keyring.get_password('StorageRestAPI', 'OpsCenterPort', username='hup', password=keyring.get_password('StorageRestAPI', 'hup'))
+storage = RestAPI(fqdn_ip=keyring.get_password('StorageRestAPI', 'OpsCenterIp'), port=keyring.get_password('StorageRestAPI', 'OpsCenterPort'), username='hup', password=keyring.get_password('StorageRestAPI', 'hup'))
 
 @pytest.mark.storage_systems_get
 def test_storage_systems_get():
