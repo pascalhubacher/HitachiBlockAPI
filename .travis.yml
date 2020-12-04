@@ -1,4 +1,4 @@
-sudo: required
+os: windows
 dist: xenial
 language: python
 virtualenv:
