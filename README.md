@@ -13,7 +13,7 @@ Get the ucode, IP and other details of the storage
 `storage_summaries_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=0)`
 
 `_storage_device_id_set(self)`
-
+### Jobs
 `_jobs_by_id_get(self, jobId=None)`
 
 `_jobs_last_get(self)`
