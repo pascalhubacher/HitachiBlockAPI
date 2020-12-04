@@ -1,8 +1,5 @@
 """
 This library provides an easy way to script tasks for the Hitachi Storage Arrays.
-
-Please be aware that when passing arguments to methods that take \*\*kwargs, the exact
-parameters that can be passed can be found in the REST API guide.
 """
 
 import http.client
@@ -57,6 +54,7 @@ class RestAPI:
         self.__url_resource_lock = '/services/resource-group-service/actions/lock/invoke'
         self.__url_resource_unlock = '/services/resource-group-service/actions/unlock/invoke'
         self.__url_storages = '/storages'
+        self.__url_storage_summaries = '/storage-summaries/instance'
         self.__url_jobs = '/jobs'
         self.__url_sessions = '/sessions'
         self.__url_ports = '/ports'
@@ -295,7 +293,37 @@ class RestAPI:
         return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(storage_device_id))
         logger.debug('Request response: ' + str(return_response))
 
-        return_response = self.__check_response(return_response=return_response, element_number=element_number, key='all')
+        return_response = self.__check_response(return_response=return_response, key='all')
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(return_response)
+
+    #gets the summaries of a storage
+    def storage_summaries_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=0):
+        #self.__url_storage_summaries
+        start = time.time()
+        request_type = 'GET'
+        
+        #set token to None so user and password is used
+        self._token = None
+        #set internal values if nothing is specified
+        if fqdn_ip == None:
+            fqdn_ip = self._ip_fqdn
+        if port == None:
+            port = self._port
+        if username == None:
+            username = self._username
+        if password == None:
+            password = self.__password
+
+        #get StorageDeviceId
+        storage_device_id = self._storage_device_id_get(fqdn_ip=fqdn_ip, port=port, username=username, element_number=element_number)
+
+        logger.debug('Request string: '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_storage_summaries))
+        return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(storage_device_id)+str(self.__url_storage_summaries))
+        logger.debug('Request response: ' + str(return_response))
+
+        return_response = self.__check_response(return_response=return_response, key='all')
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_response)
@@ -394,7 +422,7 @@ class RestAPI:
         return(return_response[element_number][self.__json_storage_device_id])
           
     #set storage device id        
-    def _storage_device_id_set(self, element_number=0):
+    def _storage_device_id_set(self, element_number:int=0):
         #get storage device id
         return_response=self._storage_device_id_get(element_number=element_number)
         #set variable
@@ -460,7 +488,7 @@ class RestAPI:
             return(return_response[0])
     
     #get job by id
-    def _jobs_by_id_get(self, jobId=None):
+    def _jobs_by_id_get(self, jobId:str=None):
         '''
         '''
         start = time.time()
