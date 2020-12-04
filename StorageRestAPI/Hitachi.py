@@ -275,6 +275,9 @@ class RestAPI:
         start = time.time()
         request_type = 'GET'
         
+        #execute general procedures
+        self._general_execute()
+        
         #set token to None so user and password is used
         self._token = None
         #set internal values if nothing is specified
