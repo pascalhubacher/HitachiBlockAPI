@@ -99,7 +99,8 @@ class RestAPI:
                     #if you specify 'all' then the whole dictionary is sent back
                     if key == 'all':
                         logger.debug('key "all" selected')
-                        return(json.dumps(return_response_json))
+                        #return dict
+                        return(return_response_json)
                     else:
                         #check if the key exists
                         if key in return_response_json:
@@ -112,8 +113,8 @@ class RestAPI:
                                 if isinstance(return_response_json[key], list):
                                     return(return_response_json[key])
                                 else:
-                                    #create string
-                                    return(json.dumps(return_response_json[key]))
+                                    #return dict
+                                    return(return_response_json[key])
                         else:
                             logger.error('the key you looked for "'+str(key)+'" does not exist in the dictionary.')
                             return(-1)
@@ -270,7 +271,7 @@ class RestAPI:
         return(return_response)
 
     #gets the storge details ucode, ip
-    def storage_details_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=0):
+    def storage_details_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None):
         start = time.time()
         request_type = 'GET'
         
@@ -286,11 +287,8 @@ class RestAPI:
         if password == None:
             password = self.__password
 
-        #get StorageDeviceId
-        storage_device_id = self._storage_device_id_get(fqdn_ip=fqdn_ip, port=port, username=username, element_number=element_number)
-
         logger.debug('Request string: '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id))
-        return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(storage_device_id))
+        return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id))
         logger.debug('Request response: ' + str(return_response))
 
         return_response = self.__check_response(return_response=return_response, key='all')
@@ -299,7 +297,7 @@ class RestAPI:
         return(return_response)
 
     #gets the summaries of a storage
-    def storage_summaries_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=0):
+    def storage_summaries_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None):
         #self.__url_storage_summaries
         start = time.time()
         request_type = 'GET'
@@ -316,11 +314,8 @@ class RestAPI:
         if password == None:
             password = self.__password
 
-        #get StorageDeviceId
-        storage_device_id = self._storage_device_id_get(fqdn_ip=fqdn_ip, port=port, username=username, element_number=element_number)
-
         logger.debug('Request string: '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_storage_summaries))
-        return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(storage_device_id)+str(self.__url_storage_summaries))
+        return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_storage_summaries))
         logger.debug('Request response: ' + str(return_response))
 
         return_response = self.__check_response(return_response=return_response, key='all')
@@ -361,9 +356,10 @@ class RestAPI:
         '''
 
         #parse json string to dictionary
-        if self.__is_json(return_response):
-            #parse as json dictionary
-            storage_details = json.loads(return_response)
+        if type(return_response) == dict:
+            storage_details = return_response
+        else:
+            logger.error('Request response is not of type dict')
         
         #create new body to register the storage
         if str(storage_details['model']) in ['VSP E990', 'VSP G350', 'VSP G370', 'VSP G700', 'VSP G900', 'VSP F350', 'VSP F370', 'VSP F700', 'VSP F900']:
@@ -388,15 +384,17 @@ class RestAPI:
         #register storage        
         request_type = 'POST'
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages))
-        return_response=self._webrequest(request_type=request_type, fqdn_ip=cmrestapi_fqdn_ip, port=cmrestapi_port, username=username, password=password, body=str(json.dumps(body)), url_suffix=self.__url_base+self.__url_storages)
+        return_response=self._generalwebrequest(request_type=request_type, fqdn_ip=cmrestapi_fqdn_ip, port=cmrestapi_port, username=username, password=password, body=str(json.dumps(body)), url_suffix=self.__url_base+self.__url_storages)
         logger.debug('Request response: ' + str(return_response))
 
-        return(self.__check_response(return_response=return_response))
+        return(return_response)
 
     #set storage device id        
-    def _storage_device_id_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=0):
+    def _storage_device_id_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=None):
         start = time.time()
         request_type = 'GET'
+
+        return_value = None
 
         #set token to None so user and password is used
         self._token = None
@@ -411,18 +409,31 @@ class RestAPI:
             port = self._port
 
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages))
-        #these requests do not use the general webrequest this function is part of it.
-        return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=self.__url_base+self.__url_storages)
+        return_response=self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages)
         logger.debug('Request response: ' + str(return_response))
         
-        #check the response for errors
-        return_response = self.__check_response(return_response=return_response, element_number=element_number)
+        if type(return_response) == list:
+            if len(return_response) == 1:
+                #only one storage system is returned
+                return_value = return_response[0][self.__json_storage_device_id]
+            else:
+                #element number specified
+                if element_number == None:
+                    logger.error('The parameter "element_number" is not specified but more than 1 storage system is returned. Specify what storge system you want to use.')
+                else:
+                    #storage device id of the element specified is returned
+                    return_value = return_response[element_number][self.__json_storage_device_id]
+        else:
+            #totally wrong return type
+            logger.error('The response is not of type list ('+str(type(return_response))+')')
+            return_value = -1
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-        return(return_response[element_number][self.__json_storage_device_id])
+        return(return_value)
           
     #set storage device id        
-    def _storage_device_id_set(self, element_number:int=0):
+    def _storage_device_id_set(self, element_number:int=None):
         #get storage device id
         return_response=self._storage_device_id_get(element_number=element_number)
         #set variable
@@ -700,7 +711,7 @@ class RestAPI:
 
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-        return(json.dumps(return_response[0]))
+        return(return_response[0])
 
     #get pools
     def pools_get(self, poolId=None, timeout:int=30):
@@ -741,10 +752,7 @@ class RestAPI:
                     return_value = pools
             else:
                 logger.error('Pool Id is not a number ('+str(poolId)+'). Must be between 0 and 127')
-                return_value = -1
-        
-
-        
+                return_value = -1     
         
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
