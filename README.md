@@ -58,8 +58,6 @@ Get the ucode, IP and other details of the storage
 Please download the latest Hitachi Rest API documentation from:<br />
 https://knowledge.hitachivantara.com/Documents/Management_Software/Ops_Center/API_Configuration_Manager<br />
 
-edited by Daenu
-
 ## Coding
 ### Load RestAPI class
 #If you have a Hitachi.py file in the same directory as you run your python program<br />
