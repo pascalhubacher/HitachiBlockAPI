@@ -73,4 +73,4 @@ If you use the Configuration RestAPI / Ops Center API then use port 23451<br />
 `#set logging level`<br />
 `logger.setLevel(logging.INFO)`<br />
 `#logger.setLevel(logging.DEBUG)`<br />
-`storage = RestAPI(storage_fqdn_ip='10.10.10.10', port=23451, username='[user]', password='[password]')`<br />
+`storage = RestAPI(fqdn_ip='10.10.10.10', port=23451, username='[user]', password='[password]')`<br />
