@@ -3,12 +3,13 @@
 # platform: win-64
 atomicwrites=1.4.0=py_0
 attrs=20.2.0=py_0
-ca-certificates=2020.11.8=h5b45459_0
-certifi=2020.11.8=py39hcbf5309_0
+ca-certificates=2020.10.14=0
+certifi=2020.11.8=py39haa95532_0
 colorama=0.4.4=py_0
 importlib-metadata=2.0.0=py_1
 importlib_metadata=2.0.0=1
 iniconfig=1.1.1=py_0
+keyring=21.5.0=py39hcbf5309_0
 logging=0.4.9.6=pypi_0
 more-itertools=8.5.0=py_0
 openssl=1.1.1h=he774522_0
@@ -22,6 +23,7 @@ pytest-html=3.0.0=pyhd8ed1ab_0
 pytest-metadata=1.11.0=pyhd3deb0d_0
 python=3.9.0=h6244533_2
 python_abi=3.9=1_cp39
+pywin32-ctypes=0.2.0=py39hde42818_1002
 setuptools=50.3.2=py39haa95532_2
 six=1.15.0=py_0
 sqlite=3.33.0=h2a8f88b_0
