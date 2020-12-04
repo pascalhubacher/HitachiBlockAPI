@@ -274,6 +274,9 @@ class RestAPI:
     def storage_details_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None):
         start = time.time()
         request_type = 'GET'
+
+        #execute general procedures
+        self._general_execute()
         
         #set token to None so user and password is used
         self._token = None
@@ -301,6 +304,9 @@ class RestAPI:
         #self.__url_storage_summaries
         start = time.time()
         request_type = 'GET'
+
+        #execute general procedures
+        self._general_execute()
         
         #set token to None so user and password is used
         self._token = None
@@ -324,7 +330,7 @@ class RestAPI:
         return(return_response)
 
     #register a storage in the Configuration Manager API
-    def storage_register(self, storage_fqdn_ip:str, cmrestapi_fqdn_ip:str=None, storage_port:str='443', cmrestapi_port:str='23451', username:str=None, password:str=None):
+    def storage_register(self, storage_fqdn_ip:str, cmrestapi_fqdn_ip:str=None, storage_port:str='443', cmrestapi_port:str='23451', cmrest_username:str=None, cmrest_password:str=None, storage_username:str=None, storage_password:str=None):
         #get storage details
         start = time.time()
         request_type = 'GET'
@@ -332,19 +338,27 @@ class RestAPI:
         #set token to None so user and password is used
         self._token = None
         #set internal values if nothing is specified
-        if username == None:
-            logger.debug('username set to: '+str(self._username))
-            username = self._username
-        if password == None:
-            logger.debug('password set to the value you set as you instanciated it.')
-            password = self.__password
-
+        #CM REST API
+        if cmrest_username == None:
+            logger.debug('cm rest username set to: '+str(self._username))
+            cmrest_username = self._username
+        if cmrest_password == None:
+            logger.debug('cmrest password set to the value you set as you instanciated it.')
+            cmrest_password = self.__password
         if cmrestapi_fqdn_ip == None:
             logger.debug('cmrestapi_fqdn_ip set to: '+str(self._ip_fqdn))
             cmrestapi_fqdn_ip = self._ip_fqdn
+        #Storage
+        if storage_username == None:
+            logger.debug('storage username set to: '+str(self._username))
+            storage_username = self._username
+        if storage_password == None:
+            logger.debug('storage password set to the value you set as you instanciated it.')
+            storage_password = self.__password
 
         #get storage device id
-        return_response=self.storage_details_get(fqdn_ip=storage_fqdn_ip, port=storage_port)
+        return_response=self._storage_device_id_get(fqdn_ip=storage_fqdn_ip, port=storage_port, username=storage_username, password=storage_password)
+        #return_response=self.storage_details_get(fqdn_ip=storage_fqdn_ip, port=storage_port, username=storage_username, password=storage_password)
         
         '''
         For VSP E series, VSP G350, G370, G700, G900, VSP F350, F370, F700, F900 with SVP
@@ -384,7 +398,7 @@ class RestAPI:
         #register storage        
         request_type = 'POST'
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages))
-        return_response=self._generalwebrequest(request_type=request_type, fqdn_ip=cmrestapi_fqdn_ip, port=cmrestapi_port, username=username, password=password, body=str(json.dumps(body)), url_suffix=self.__url_base+self.__url_storages)
+        #return_response=self._generalwebrequest(request_type=request_type, fqdn_ip=cmrestapi_fqdn_ip, port=cmrestapi_port, username=cmrest_username, password=cmrest_password, body=str(json.dumps(body)), url_suffix=self.__url_base+self.__url_storages)
         logger.debug('Request response: ' + str(return_response))
 
         return(return_response)
@@ -420,22 +434,36 @@ class RestAPI:
                 #element number specified
                 if element_number == None:
                     logger.error('The parameter "element_number" is not specified but more than 1 storage system is returned. Specify what storge system you want to use.')
+                    sys.exit()
                 else:
                     #storage device id of the element specified is returned
                     return_value = return_response[element_number][self.__json_storage_device_id]
         else:
             #totally wrong return type
             logger.error('The response is not of type list ('+str(type(return_response))+')')
-            return_value = -1
+            sys.exit()
 
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_value)
           
     #set storage device id        
-    def _storage_device_id_set(self, element_number:int=None):
+    def _storage_device_id_set(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=None):
+
+        #set token to None so user and password is used
+        self._token = None
+        #set internal values if nothing is specified
+        if username == None:
+            username = self._username
+        if password == None:
+            password = self.__password
+        if fqdn_ip == None:
+            fqdn_ip = self._ip_fqdn
+        if port == None:
+            port = self._port
+
         #get storage device id
-        return_response=self._storage_device_id_get(element_number=element_number)
+        return_response=self._storage_device_id_get(fqdn_ip=fqdn_ip, port=port, username=username, password=password, element_number=element_number)
         #set variable
         logger.debug('set class variable "_storage_device_id" to "' + str(return_response) + '"')
         self._storage_device_id = return_response
