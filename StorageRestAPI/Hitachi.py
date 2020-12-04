@@ -132,7 +132,7 @@ class RestAPI:
             return(-1)
 
     #extecutes the web request
-    def _webrequest(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, request_type:str='GET', url_suffix:str=None, body:str=None, timeout:int=30):
+    def _webrequest(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, request_type:str='GET', url_suffix:str=None, body:str=None, timeout:int=60):
         '''Return the json response of the webrequest'''
         start = time.time()
 
@@ -215,7 +215,7 @@ class RestAPI:
         return(return_response)
     
     #general webrequest that creates/deletes sessions
-    def _general_webrequest(self, request_type, url_suffix=None, body=None, timeout:int=30):
+    def _general_webrequest(self, request_type, url_suffix=None, body=None, timeout:int=60):
         start = time.time()
 
         return_value = None
