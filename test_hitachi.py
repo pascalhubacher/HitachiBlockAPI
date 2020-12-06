@@ -39,9 +39,16 @@ def test_storage_systems_get():
     #must be of type list
     assert type(result) == list
 
+@pytest.mark.storage_device_id_set
+def test_storage_device_id_set():
+    result = storage.storage_device_id_set(element_number=1)
+    #must be of type list
+    assert type(result) == str
+    assert len(result) == 12
+
 @pytest.mark.storage_device_id_get
 def test_storage_device_id_get():
-    result = storage._storage_device_id_get()
+    result = storage.storage_device_id_get()
     #must be of type list
     assert type(result) == str
     assert len(result) == 12
@@ -50,21 +57,13 @@ def test_storage_device_id_get():
 def test_storage_details_get():
     result = storage.storage_details_get()
     #must be json compatible
-    assert type(result) == str
-    assert is_json(result) == True
-    if is_json(result):
-        #must be of type dict
-        assert type(json.loads(result)) == dict
+    assert type(result) == dict
 
 @pytest.mark.storage_summaries_get
 def test_storage_summaries_get():
-    result = storage.storage_summaries_get()
+    result = storage.storage_summaries_get(timeout=90)
     #must be json compatible
-    assert type(result) == str
-    assert is_json(result) == True
-    if is_json(result):
-        #must be of type dict
-        assert type(json.loads(result)) == dict
+    assert type(result) == dict
 
 @pytest.mark.jobs_all
 def test_jobs_all():

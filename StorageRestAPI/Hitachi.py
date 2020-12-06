@@ -319,7 +319,7 @@ class RestAPI:
         return(return_response)
 
     #gets the summaries of a storage
-    def storage_summaries_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None):
+    def storage_summaries_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, timeout:int=90):
         #self.__url_storage_summaries
         start = time.time()
         request_type = 'GET'
@@ -340,7 +340,7 @@ class RestAPI:
             password = self.__password
 
         logger.debug('Request string: '+str(request_type)+' - '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_storage_summaries))
-        return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_storage_summaries))
+        return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_storage_summaries), timeout=timeout)
         logger.debug('Request response: ' + str(return_response))
 
         return_response = self.__check_response(return_response=return_response, key='all')
