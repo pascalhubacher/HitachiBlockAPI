@@ -32,7 +32,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # The current version of this library.
-VERSION = "0.9.7"
+VERSION = "0.9.8"
 
 class RestAPI:
     '''This Class can be used to : '''
@@ -817,7 +817,7 @@ class RestAPI:
         return(return_value)
 
     #get ports
-    def ports_get(self, portId=None, logins:bool=True, timeout:int=60):
+    def ports_get(self, portId=None, logins:bool=True, timeout:int=90):
         start = time.time()
         request_type='GET'
 
@@ -865,19 +865,17 @@ class RestAPI:
             return_response = self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+str(self.__url_ports)+'/'+str(portId)+'?detailInfoType=class', timeout=timeout)
             return_response = self.__check_response(return_response=return_response, key='all')
             logger.debug('Request response: ' + str(return_response))
-            if self.__is_json(return_response):
-                return_response = json.loads(return_response)
-                ports = {}
-                ports[str(return_response['portId'])] = {}
-                ports[str(return_response['portId'])] = return_response
-                return_value = ports
-         
+            ports = {}
+            ports[str(return_response['portId'])] = {}
+            ports[str(return_response['portId'])] = return_response
+            return_value = ports
+        
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_value)
 
     #get all ldevs or a specifig ldev
-    def ldevs_get(self, ldevNumber=None, count=16384, timeout:int=30):
+    def ldevs_get(self, ldevNumber=None, count=16384, timeout:int=1000):
         start = time.time()
         #max ldevs 16384
         request_type='GET'
@@ -886,13 +884,16 @@ class RestAPI:
         self._general_execute()
         
         if ldevNumber == None:
+            if timeout == 30:
+                timeout = 600
             logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count)))
             return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count), timeout=timeout)
             logger.debug('Request response: ' + str(return_response))
         else:
             if str(ldevNumber).isnumeric():
                 logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber)))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber), timeout=timeout)
+                return_response = self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs/'+str(ldevNumber), timeout=timeout)
+                return_response = self.__check_response(return_response=return_response, key='all')
                 logger.debug('Request response: ' + str(return_response))
             else:
                 logger.error('ERROR: response: ldevNumber[dec] "'+str(ldevNumber)+'" is not a decimal ldev number')
@@ -917,7 +918,7 @@ class RestAPI:
         return(ldevs)
 
     #get hostgroups of one port
-    def host_groups_one_port_get(self, portId, timeout:int=30):
+    def host_groups_one_port_get(self, portId, timeout:int=60):
         start = time.time()
         request_type='GET'
 
@@ -950,7 +951,7 @@ class RestAPI:
         return(hostGroups)
 
     #get host group of all ports
-    def host_groups_all_ports_get(self, timeout:int=30):
+    def host_groups_all_ports_get(self, timeout:int=300):
         start = time.time()
         request_type='GET'
 
@@ -1043,7 +1044,7 @@ class RestAPI:
         return(luns)
     
     #get the luns of one hostgroups of one port
-    def luns_one_port_get(self, portId):
+    def luns_one_port_get(self, portId, timeout:int=60):
         start = time.time()
         request_type='GET'
 
@@ -1098,7 +1099,7 @@ class RestAPI:
             return(luns)
 
     #get the luns of all hostgroups of one port
-    def luns_all_ports_get(self, timeout:int=180):
+    def luns_all_ports_get(self, timeout:int=60):
         start = time.time()
         request_type='GET'
 
@@ -1135,8 +1136,8 @@ class RestAPI:
         #'CL3-B,5' -> 'CL3-B' and '5'
         port, hostgroup = portId_hostGroupId.split(',')
 
-        logger.debug('Request string: '+str(self.__url_base+'/host-wwns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup)))
-        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+'/host-wwns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup), timeout=timeout)
+        logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/host-wwns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup)))
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/host-wwns?portId='+str(port)+'&hostGroupNumber='+str(hostgroup), timeout=timeout)
         logger.debug('Request response: ' + str(return_response))
 
         '''
@@ -1240,7 +1241,7 @@ class RestAPI:
         return(wwns)
 
     #get all replication configuration
-    def replication_get(self, replicationType=None, timeout:int=180):
+    def replication_get(self, replicationType=None, timeout:int=1000):
         start = time.time()
         request_type='GET'
                 
@@ -1248,13 +1249,13 @@ class RestAPI:
         self._general_execute()
 
         if replicationType == None:
-            logger.debug('Request string: '+str(self.__url_base+self.__url_remotereplication))
-            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_remotereplication, timeout=timeout)
+            logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_remotereplication))
+            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_remotereplication, timeout=timeout)
             logger.debug('Request response: ' + str(return_response))
         else:
             if str(replicationType) in ['GAD', 'UR', 'TC']:
                 logger.debug('Request string: '+str(self.__url_base+self.__url_remotereplication+'?replicationType='+str(replicationType)))
-                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_remotereplication+'?replicationType='+str(replicationType), timeout=timeout)
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+self.__url_remotereplication+'?replicationType='+str(replicationType), timeout=timeout)
                 logger.debug('Request response: ' + str(return_response))
             else:
                 logger.error('ERROR: the replicationType ('+str(replicationType)+') is not supported. Specify "GAD", "UR", "TC".')
@@ -1312,7 +1313,7 @@ class RestAPI:
         return(snapshotgroups)
 
     #get all snapshots or the snapshots of a specific ldev
-    def snapshots_get(self, ldevNumber=None, timeout:int=30):
+    def snapshots_get(self, ldevNumber=None, timeout:int=360):
         start = time.time()
         request_type='GET'
 
