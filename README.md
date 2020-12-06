@@ -8,11 +8,20 @@ Also the responses are formatted in JSON so can easily select or search for spec
 ### General
 Get the ucode, IP and other details of the storage
 
-`storage_details_get(self)`
+`storage_systems_get(fqdn_ip:str=None, port:str=None, username:str=None, password:str=None)`
 
-`storage_summaries_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=0)`
+`storage_device_id_set(fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=None)`
 
-`_storage_device_id_set(self)`
+`storage_details_get(fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, storageDeviceId:str=None)`
+
+`storage_summaries_get(fqdn_ip:str=None, port:str=None, username:str=None, password:str=None)`
+
+### Session handling
+`_session_create()`
+
+`_session_delete()`
+
+`_session_get()`
 ### Jobs
 `_jobs_by_id_get(self, jobId=None)`
 
@@ -73,5 +82,10 @@ https://knowledge.hitachivantara.com/Documents/Management_Software/Ops_Center/AP
 `#logger.setLevel(logging.DEBUG)`<br />
 If you use the Configuration RestAPI / Ops Center API then use port 23451<br />
 `storage = RestAPI(fqdn_ip='10.10.10.10', port=23451, username='[user]', password='[password]')`<br />
+If you have more than one storage registerd then you have to specify with which one you want to work with
+In the following example the first element is chosen.
+If you want to change it then you have to reexecute the command with another element_number
+`storage.storage_device_id_set(element_number=0)`
 If you directly contact the storage SVP or the GUM then use port 443. But this is the default so you do not have to specify it.<br />
 `storage = RestAPI(fqdn_ip='10.10.10.10', username='[user]', password='[password]')`<br />
+If you only have one storage registerd then you do not have to set it (done automatically in the background).

@@ -10,7 +10,6 @@ importlib-metadata=2.0.0=py_1
 importlib_metadata=2.0.0=1
 iniconfig=1.1.1=py_0
 keyring=21.5.0=py39hcbf5309_0
-logging=0.4.9.6=pypi_0
 more-itertools=8.5.0=py_0
 openssl=1.1.1h=he774522_0
 packaging=20.4=py_0
