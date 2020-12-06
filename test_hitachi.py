@@ -5,9 +5,6 @@ import keyring
 def hitachi():
     from StorageRestAPI.Hitachi import RestAPI
     return RestAPI()
-
-def test_add(hitachi):
-    assert hitachi.add(1,2) == 3
 '''
 
 import json
