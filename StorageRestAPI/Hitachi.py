@@ -932,7 +932,7 @@ class RestAPI:
         return(ldevs)
 
     #get hostgroups of one port
-    def host_groups_one_port_get(self, portId, timeout:int=60):
+    def host_groups_one_port_get(self, portId, timeout:int=600):
         start = time.time()
         request_type='GET'
 
@@ -965,7 +965,7 @@ class RestAPI:
         return(hostGroups)
 
     #get host group of all ports
-    def host_groups_all_ports_get(self, timeout:int=300):
+    def host_groups_all_ports_get(self, timeout:int=600):
         start = time.time()
         request_type='GET'
 
