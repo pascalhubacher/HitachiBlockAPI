@@ -294,7 +294,7 @@ class RestAPI:
         return(storages)
 
     #gets the storge details ucode, ip
-    def storage_details_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, storageDeviceId:str=None):
+    def storage_details_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None):
         start = time.time()
         request_type = 'GET'
 
@@ -309,15 +309,13 @@ class RestAPI:
             fqdn_ip = self._ip_fqdn
         if port == None:
             port = self._port
-        if storageDeviceId == None:
-            storageDeviceId =self._storage_device_id
         if username == None:
             username = self._username
         if password == None:
             password = self.__password
 
         logger.debug('Request string: '+str(request_type)+' - '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id))
-        return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(storageDeviceId))
+        return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_objects+self.__url_storages+'/'+str(self._storage_device_id))
         logger.debug('Request response: ' + str(return_response))
 
         return_response = self.__check_response(return_response=return_response, key='all')
@@ -385,7 +383,7 @@ class RestAPI:
         #get storage device id
         storageDeviceId=self.storage_device_id_set(fqdn_ip=storage_fqdn_ip, port=storage_port, username=storage_username, password=storage_password)
         logger.debug('storageDeviceId set to'+str(storageDeviceId))
-        return_response=self.storage_details_get(fqdn_ip=storage_fqdn_ip, port=storage_port, username=storage_username, password=storage_password, storageDeviceId=storageDeviceId)
+        return_response=self.storage_details_get(fqdn_ip=storage_fqdn_ip, port=storage_port, username=storage_username, password=storage_password)
 
         '''
         For VSP E series, VSP G350, G370, G700, G900, VSP F350, F370, F700, F900 with SVP
