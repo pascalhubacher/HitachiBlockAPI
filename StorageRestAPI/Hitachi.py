@@ -64,6 +64,7 @@ class RestAPI:
         self.__url_snapshotsall = '/snapshot-replications'
         self.__json_data = 'data'
         self.__json_storage_device_id = 'storageDeviceId'
+        self.__json_serial_number = 'serialNumber'
         self.__json_token = 'token'
         self.__json_sessionId = 'sessionId'
         self.__json_hostWwnId = 'hostWwnId'
@@ -280,11 +281,17 @@ class RestAPI:
         logger.debug('Request string: '+str(request_type)+' - '+str(self.__url_base+self.__url_storages))
         return_response=self._webrequest(request_type=request_type, fqdn_ip=fqdn_ip, port=port, username=username, password=password, url_suffix=self.__url_base+self.__url_storages)
         logger.debug('Request response: ' + str(return_response))
-
         return_response = self.__check_response(return_response=return_response)
+        #[{'storageDeviceId': '800000058068',  'model': 'VSP G1000',  'serialNumber': 58068,  'svpIp': '10.70.4.145'}]
+        
+        #create a dictionary out of the list
+        storages = {}
+        for storage in return_response:
+            storages[storage[self.__json_serial_number]] = storage
+        
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-        return(return_response)
+        return(storages)
 
     #gets the storge details ucode, ip
     def storage_details_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, storageDeviceId:str=None):
