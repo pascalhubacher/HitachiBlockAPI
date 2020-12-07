@@ -460,8 +460,7 @@ class RestAPI:
             logger.debug('Request response: ' + str(return_response))
         else:
             logger.info('storageDeviceID already set to: '+str(self._storage_device_id))
-            return_response = None
-            return_value = self._storage_device_id
+            return(self._storage_device_id)
         
         if type(return_response) == dict:
             if len(return_response) == 1:
