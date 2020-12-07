@@ -1227,7 +1227,7 @@ class RestAPI:
             return(wwns)
 
     #get the wwns of all hostgroups of all ports
-    def wwns_all_ports_get(self, timeout:int=180):
+    def wwns_all_ports_get(self, timeout:int=300):
         start = time.time()
         request_type='GET'
 
