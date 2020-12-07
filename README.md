@@ -1,8 +1,8 @@
 # StorageRestAPI<br />
 Storage Rest API Class<br />
-
+ 
 With this class it is a lot easier to work with the Configuration Rest API as it automatically gets the storage id and it creates/deletes sessions for all tasks.
-Also the responses are formatted in JSON so can easily select or search for specific information.
+Also the responses are formatted as a python dict to easily select or search for specific information.
 
 ## Available functions
 ### General
