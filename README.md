@@ -10,7 +10,9 @@ Get the ucode, IP and other details of the storage
 
 `storage_systems_get(fqdn_ip:str=None, port:str=None, username:str=None, password:str=None)`
 
-`storage_device_id_set(fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=None)`
+`storage_device_id_get(fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, serial_number:int=None)`
+
+`storage_device_id_set(fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, serial_number:int=None)`
 
 `storage_details_get(fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, storageDeviceId:str=None)`
 

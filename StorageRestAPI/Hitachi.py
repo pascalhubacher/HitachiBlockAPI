@@ -436,7 +436,7 @@ class RestAPI:
         return(return_response)
 
     #set storage device id        
-    def storage_device_id_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=None):
+    def storage_device_id_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, serial_number:int=None):
         start = time.time()
         request_type = 'GET'
 
@@ -458,24 +458,34 @@ class RestAPI:
         if self._storage_device_id == None:
             logger.info('storageDeviceID not set. Send request to find out.')
             logger.debug('Request string: '+str(request_type)+' - '+str(self.__url_base+self.__url_storages))
-            return_response=self._general_webrequest(fqdn_ip=fqdn_ip, username=username, password=password, port=port ,request_type=request_type, url_suffix=self.__url_base+self.__url_storages)
+            return_response=self.storage_systems_get(fqdn_ip=fqdn_ip, username=username, password=password, port=port)
             logger.debug('Request response: ' + str(return_response))
         else:
             logger.info('storageDeviceID already set to: '+str(self._storage_device_id))
-            return_response = [{self.__json_storage_device_id: self._storage_device_id}]
+            return_response = None
+            return_value = self._storage_device_id
         
-        if type(return_response) == list:
+        if type(return_response) == dict:
             if len(return_response) == 1:
                 #only one storage system is returned
-                return_value = return_response[0][self.__json_storage_device_id]
+                for element in return_response:
+                    return_value = return_response[element][self.__json_storage_device_id]
+                    break
             else:
                 #element number specified
-                if element_number == None:
-                    logger.error('The parameter "element_number" is not specified but more than 1 storage system is returned. Specify what storge system you want to use.')
+                if serial_number == None:
+                    logger.error('The parameter "serial_number" is not specified but more than 1 storage system is returned. Specify what storge system you want to use.')
                     sys.exit()
                 else:
                     #storage device id of the element specified is returned
-                    return_value = return_response[element_number][self.__json_storage_device_id]
+                    for key, value in return_response.items():
+                        if str(key) == str(serial_number):
+                            return_value = value[self.__json_storage_device_id]
+                            break
+                    #if the serial number is not found
+                    if return_value == None:
+                        logger.error('The parameter "serial_number" is not found in the storage systems that are returned. Specify a serial number that exists.')
+                        sys.exit()
         else:
             #totally wrong return type
             logger.error('The response is not of type list ('+str(type(return_response))+')')
@@ -486,7 +496,7 @@ class RestAPI:
         return(return_value)
           
     #set storage device id        
-    def storage_device_id_set(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, element_number:int=None):
+    def storage_device_id_set(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, serial_number:int=None):
 
         #set token to None so user and password is used
         self._token = None
@@ -504,7 +514,7 @@ class RestAPI:
         self._storage_device_id = None
 
         #get storage device id
-        return_response=self.storage_device_id_get(fqdn_ip=fqdn_ip, port=port, username=username, password=password, element_number=element_number)
+        return_response=self.storage_device_id_get(fqdn_ip=fqdn_ip, port=port, username=username, password=password, serial_number=serial_number)
         #set variable
         logger.debug('set class variable "_storage_device_id" to "' + str(return_response) + '"')
         self._storage_device_id = return_response
