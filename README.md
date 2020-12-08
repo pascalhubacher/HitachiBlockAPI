@@ -87,7 +87,7 @@ If you use the Configuration RestAPI / Ops Center API then use port 23451<br />
 If you have more than one storage registerd then you have to specify with which one you want to work with
 In the following example the first element is chosen.
 If you want to change it then you have to reexecute the command with another element_number
-`storage.storage_device_id_set(serial_number=[serial number of the storage])`
+`storage.storage_device_id_set(serial_number=[serial number of the storage])`<br />
 If you directly contact the storage SVP or the GUM then use port 443. But this is the default so you do not have to specify it.<br />
 `storage = RestAPI(fqdn_ip='10.10.10.10', username='[user]', password='[password]')`<br />
 If you only have one storage registerd then you do not have to set it (done automatically in the background).
