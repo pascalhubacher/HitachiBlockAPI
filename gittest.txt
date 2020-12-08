@@ -1,0 +1,1 @@
+This is only a testfile to check if it is possible to work with git an merge all the stuff when masterbranch is under access control.
