@@ -91,3 +91,8 @@ If you want to change it then you have to reexecute the command with another ele
 If you directly contact the storage SVP or the GUM then use port 443. But this is the default so you do not have to specify it.<br />
 `storage = RestAPI(fqdn_ip='10.10.10.10', username='[user]', password='[password]')`<br />
 If you only have one storage registerd then you do not have to set it (done automatically in the background).
+
+## Improvements
+# serialnumber
+It would be easier to use the serial like this:
+`storage.storage_device_id_set(serialnumber=12345)`
