@@ -5,5 +5,5 @@ setup(
     packages=['StorageRestAPI'],
     version='0.9.8',
     description='Hitachi Storage REST API Project',
-    url='https://github.com/pascalhubacher/HitachiStorageRestAPI',    
+    url='https://github.com/pascalhubacher/HitachiStorageRestAPI'
 )
