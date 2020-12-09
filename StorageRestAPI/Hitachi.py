@@ -434,7 +434,7 @@ class RestAPI:
         return(return_response)
 
     #set storage device id        
-    def storage_device_id_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, serial_number:int=None):
+    def storage_device_id_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, serial_number:str=None):
         start = time.time()
         request_type = 'GET'
 
@@ -493,7 +493,7 @@ class RestAPI:
         return(return_value)
           
     #set storage device id        
-    def storage_device_id_set(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, serial_number:int=None):
+    def storage_device_id_set(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, serial_number:str=None):
 
         #set token to None so user and password is used
         self._token = None
