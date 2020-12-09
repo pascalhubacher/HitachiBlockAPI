@@ -19,7 +19,7 @@ import logging
 logger.setLevel(logging.INFO)
 #logger.setLevel(logging.DEBUG)
 ```
-If you use the Configuration RestAPI / Ops Center API then use port 23451
+If you use the Configuration Manager REST API / Ops Center API then use port 23451
 ```
 storage = RestAPI(fqdn_ip='10.10.10.10', port=23451, username='[user]', password='[password]')
 ```
