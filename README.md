@@ -1,7 +1,7 @@
-# StorageRestAPI<br />
-Storage Rest API Class<br />
+# HitachiBlockRestAPI<br />
+Hitachi Block Rest API Class<br />
  
-With this class it is a lot easier to work with the Configuration Rest API as it automatically gets the storage id and it creates/deletes sessions for all tasks.
+With this class it is a lot easier to work with the Configuration Manager Rest API as it automatically gets the storage id and it creates/deletes sessions for all tasks.
 Also the responses are formatted as a python dict to easily select or search for specific information.
 
 ## Available functions
@@ -68,15 +68,15 @@ Get the ucode, IP and other details of the storage
 `snapshots_delete(self, snapshotGroupName=None)`
 
 ## Manual
-Please download the latest Hitachi Rest API documentation from:<br />
+Please download the latest Hitachi Block Rest API documentation from:<br />
 https://knowledge.hitachivantara.com/Documents/Management_Software/Ops_Center/API_Configuration_Manager<br />
 
 ## Coding
+### Install HitachiBlockRestAPI package
+pip install -i https://test.pypi.org/simple/ HitachiBlockRestAPI<br />
 ### Load RestAPI class
-#If you have a Hitachi.py file in the same directory as you run your python program<br />
-`from Hitachi import RestAPI`<br />
-`#import the logger of the Hitachi.py Module`<br />
-`from Hitachi import logger`<br />
+`from HitachiBlockRestAPI import RestAPI`<br />
+`from HitachiBlockRestAPI import logger`<br />
 `#import the logging module to specify the logging level`<br />
 `import logging`<br />
 `#set logging level`<br />

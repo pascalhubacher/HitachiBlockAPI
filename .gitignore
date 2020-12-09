@@ -3,5 +3,5 @@ dist/
 build/
 __pycache__/
 StorageRestAPI/__pycache__/
-reports/
+tests/
 passwords_set.py
