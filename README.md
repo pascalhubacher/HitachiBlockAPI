@@ -1,7 +1,7 @@
 # HitachiBlockAPI<br />
-Hitachi Block Rest API Class<br />
+Hitachi Block API Class<br />
  
-With this class it is a lot easier to work with the Configuration Manager Rest API as it automatically gets the storage id and it creates/deletes sessions for all tasks.
+With this class it is a lot easier to work with the Configuration Manager REST API as it automatically gets the storage id and it creates/deletes sessions for all tasks.
 Also the responses are formatted as a python dict to easily select or search for specific information.
 
 ## Coding
@@ -15,7 +15,7 @@ pip install HitachiBlockAPI<br />
 `#set logging level`<br />
 `logger.setLevel(logging.INFO)`<br />
 `#logger.setLevel(logging.DEBUG)`<br />
-If you use the Configuration RestAPI / Ops Center API then use port 23451<br />
+If you use the Configuration Manager REST API / Ops Center API then use port 23451<br />
 `storage = RestAPI(fqdn_ip='10.10.10.10', port=23451, username='[user]', password='[password]')`<br />
 If you have more than one storage registerd then you have to specify with which one you want to work with
 In the following example the first element is chosen.
