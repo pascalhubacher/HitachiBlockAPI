@@ -1,4 +1,7 @@
 dist/
 *.egg-info/
 build/
+__pycache__/
 StorageRestAPI/__pycache__/
+reports/
+passwords_set.py
