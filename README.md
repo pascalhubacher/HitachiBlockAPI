@@ -6,7 +6,7 @@ Also the responses are formatted as a python dict to easily select or search for
 
 ## Coding
 ### Install HitachiBlockAPI package
-pip install -i https://test.pypi.org/simple/ HitachiBlockAPI<br />
+pip install -i HitachiBlockAPI<br />
 ### Load RestAPI class
 `from HitachiBlockAPI import RestAPI`<br />
 `from HitachiBlockAPI import logger`<br />
