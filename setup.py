@@ -23,9 +23,9 @@ optional_deps = {
 
 
 setuptools.setup(
-    name='HitachiBlockRestAPI',
-    packages=['HitachiBlockRestAPI'],
-    version='0.9.9',
+    name='HitachiBlockAPI',
+    packages=['HitachiBlockAPI'],
+    version='0.9.1',
     author="Pascal Hubacher",
     description='Hitachi Storage REST API to ease the communication to Hitachi Storage',
     long_description=long_description,
