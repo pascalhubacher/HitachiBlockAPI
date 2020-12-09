@@ -4,6 +4,27 @@ Hitachi Block Rest API Class<br />
 With this class it is a lot easier to work with the Configuration Manager Rest API as it automatically gets the storage id and it creates/deletes sessions for all tasks.
 Also the responses are formatted as a python dict to easily select or search for specific information.
 
+## Coding
+### Install HitachiBlockRestAPI package
+pip install -i https://test.pypi.org/simple/ HitachiBlockRestAPI<br />
+### Load RestAPI class
+`from HitachiBlockRestAPI import RestAPI`<br />
+`from HitachiBlockRestAPI import logger`<br />
+`#import the logging module to specify the logging level`<br />
+`import logging`<br />
+`#set logging level`<br />
+`logger.setLevel(logging.INFO)`<br />
+`#logger.setLevel(logging.DEBUG)`<br />
+If you use the Configuration RestAPI / Ops Center API then use port 23451<br />
+`storage = RestAPI(fqdn_ip='10.10.10.10', port=23451, username='[user]', password='[password]')`<br />
+If you have more than one storage registerd then you have to specify with which one you want to work with
+In the following example the first element is chosen.
+If you want to change it then you have to reexecute the command with another element_number
+`storage.storage_device_id_set(serial_number=[serial number of the storage])`<br />
+If you directly contact the storage SVP or the GUM then use port 443. But this is the default so you do not have to specify it.<br />
+`storage = RestAPI(fqdn_ip='10.10.10.10', username='[user]', password='[password]')`<br />
+If you only have one storage registerd then you do not have to set it (done automatically in the background).
+
 ## Available functions
 ### General
 Get the ucode, IP and other details of the storage
@@ -70,24 +91,3 @@ Get the ucode, IP and other details of the storage
 ## Manual
 Please download the latest Hitachi Block Rest API documentation from:<br />
 https://knowledge.hitachivantara.com/Documents/Management_Software/Ops_Center/API_Configuration_Manager<br />
-
-## Coding
-### Install HitachiBlockRestAPI package
-pip install -i https://test.pypi.org/simple/ HitachiBlockRestAPI<br />
-### Load RestAPI class
-`from HitachiBlockRestAPI import RestAPI`<br />
-`from HitachiBlockRestAPI import logger`<br />
-`#import the logging module to specify the logging level`<br />
-`import logging`<br />
-`#set logging level`<br />
-`logger.setLevel(logging.INFO)`<br />
-`#logger.setLevel(logging.DEBUG)`<br />
-If you use the Configuration RestAPI / Ops Center API then use port 23451<br />
-`storage = RestAPI(fqdn_ip='10.10.10.10', port=23451, username='[user]', password='[password]')`<br />
-If you have more than one storage registerd then you have to specify with which one you want to work with
-In the following example the first element is chosen.
-If you want to change it then you have to reexecute the command with another element_number
-`storage.storage_device_id_set(serial_number=[serial number of the storage])`<br />
-If you directly contact the storage SVP or the GUM then use port 443. But this is the default so you do not have to specify it.<br />
-`storage = RestAPI(fqdn_ip='10.10.10.10', username='[user]', password='[password]')`<br />
-If you only have one storage registerd then you do not have to set it (done automatically in the background).
