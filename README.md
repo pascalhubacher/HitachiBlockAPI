@@ -1,15 +1,15 @@
-# HitachiBlockRestAPI<br />
+# HitachiBlockAPI<br />
 Hitachi Block Rest API Class<br />
  
 With this class it is a lot easier to work with the Configuration Manager Rest API as it automatically gets the storage id and it creates/deletes sessions for all tasks.
 Also the responses are formatted as a python dict to easily select or search for specific information.
 
 ## Coding
-### Install HitachiBlockRestAPI package
-pip install -i https://test.pypi.org/simple/ HitachiBlockRestAPI<br />
+### Install HitachiBlockAPI package
+pip install -i https://test.pypi.org/simple/ HitachiBlockAPI<br />
 ### Load RestAPI class
-`from HitachiBlockRestAPI import RestAPI`<br />
-`from HitachiBlockRestAPI import logger`<br />
+`from HitachiBlockAPI import RestAPI`<br />
+`from HitachiBlockAPI import logger`<br />
 `#import the logging module to specify the logging level`<br />
 `import logging`<br />
 `#set logging level`<br />

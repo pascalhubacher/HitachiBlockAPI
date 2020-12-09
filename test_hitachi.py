@@ -3,14 +3,14 @@ import keyring
 
 '''@fixture
 def hitachi():
-    from HitachiBlockRestAPI.Hitachi import RestAPI
+    from HitachiBlockAPI.Hitachi import RestAPI
     return RestAPI()
 '''
 
 import json
-from HitachiBlockRestAPI.Hitachi import RestAPI
+from HitachiBlockAPI.Hitachi import RestAPI
 #import the logger of the Hitachi.py Module
-from HitachiBlockRestAPI.Hitachi import logger
+from HitachiBlockAPI.Hitachi import logger
 #import the logging module to specify the logging level
 import logging
 
@@ -26,12 +26,12 @@ def is_json(myjson:str):
     return True
 
 #PF REST API
-#storage = RestAPI(fqdn_ip=keyring.get_password('HitachiBlockRestAPI', 'StorageIp'), username='hup', password=keyring.get_password('HitachiBlockRestAPI', 'hup'))
+#storage = RestAPI(fqdn_ip=keyring.get_password('HitachiBlockAPI', 'StorageIp'), username='hup', password=keyring.get_password('HitachiBlockAPI', 'hup'))
 #serial_number = 0
 
 # Ops Center CM REST API
-storage = RestAPI(fqdn_ip=keyring.get_password('HitachiBlockRestAPI', 'OpsCenterIp'), port=keyring.get_password('HitachiBlockRestAPI', 'OpsCenterPort'), username='hup', password=keyring.get_password('HitachiBlockRestAPI', 'hup'))
-serial_number = keyring.get_password('HitachiBlockRestAPI', 'StorageSerial')
+storage = RestAPI(fqdn_ip=keyring.get_password('HitachiBlockAPI', 'OpsCenterIp'), port=keyring.get_password('HitachiBlockAPI', 'OpsCenterPort'), username='hup', password=keyring.get_password('HitachiBlockAPI', 'hup'))
+serial_number = keyring.get_password('HitachiBlockAPI', 'StorageSerial')
 portId='CL1-B'
 ldevNumber=0
 portId_hostGroupId='CL1-B,5'
