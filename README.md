@@ -1,7 +1,7 @@
 # HitachiBlockAPI
 ## Hitachi Block API Class
  
-With this class it is a lot easier to work with the Configuration Manager Rest API as it automatically gets the storage id and it creates/deletes sessions for all tasks.
+With this class it is a lot easier to work with the Configuration Manager REST API as it automatically gets the storage id and it creates/deletes sessions for all tasks.
 Also the responses are formatted as a python dict to easily select or search for specific information.
 
 ## Coding
