@@ -831,7 +831,7 @@ class RestAPI:
         return(return_value)
 
     #get ports
-    def ports_get(self, portId=None, logins:bool=True, timeout:int=90):
+    def ports_get(self, portId=None, logins:bool=True, timeout:int=180):
         start = time.time()
         request_type='GET'
 
