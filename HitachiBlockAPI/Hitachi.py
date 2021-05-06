@@ -11,6 +11,9 @@ import logging
 import time
 import uuid
 import sys
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 
 # create logger
 logger = logging.getLogger(__name__)
@@ -36,7 +39,7 @@ VERSION = "0.9.2"
 
 class RestAPI:
     '''This Class can be used to : '''
-    
+
     def __init__(self, protocol:str='https://', fqdn_ip:str='127.0.0.1', port:int=443, username:str='maintenance', password:str='raid-maintenance'):
         self._ip_fqdn = fqdn_ip
         self._port = str(port)
@@ -51,6 +54,7 @@ class RestAPI:
         self.__url_base_ConfigurationManager = '/ConfigurationManager'
         self.__url_base_v1 = '/v1'
         self.__url_base_objects = '/objects'
+        self.__url_base_views = '/views'
         self.__url_resource_lock = '/services/resource-group-service/actions/lock/invoke'
         self.__url_resource_unlock = '/services/resource-group-service/actions/unlock/invoke'
         self.__url_storages = '/storages'
@@ -58,6 +62,7 @@ class RestAPI:
         self.__url_jobs = '/jobs'
         self.__url_sessions = '/sessions'
         self.__url_ports = '/ports'
+        self.__url_host_wwn_paths = '/host-wwn-paths'
         self.__url_pools = '/pools'
         self.__url_remotereplication = '/remote-replications'
         self.__url_snapshotgroups = '/snapshot-groups'
@@ -73,10 +78,10 @@ class RestAPI:
         self.__json_snapshotGroupName = 'snapshotGroupName'
         self.__json_snapshotId = 'snapshotId' #if you specify an ldev in the request url
         self.__json_snapshotReplicationId = 'snapshotReplicationId' #if you do not specify an ldev
-        
+
         #self.__maxConnectionsParallelTotal = 8
         #self.__maxConnectionsParallelGet = 6
-    
+
     #check if string is of json format
     def __is_json(self, myjson:str):
         try:
@@ -89,7 +94,7 @@ class RestAPI:
     def __check_response(self, return_response:list, element_number:int=0, key:str=None):
         if key == None:
             key = self.__json_data
-        
+
         return_value = None
 
         if len(return_response) == 3:
@@ -154,7 +159,7 @@ class RestAPI:
             url = self._protocol+fqdn_ip+':'+str(port)+self.__url_base+self.__url_storages
         else:
             #use the url suffix that was set in the function call
-            url = self._protocol+fqdn_ip+':'+str(port)+url_suffix    
+            url = self._protocol+fqdn_ip+':'+str(port)+url_suffix
 
         #if already a token is set then use it otherwise use the user and password
         if self._token is None:
@@ -194,7 +199,7 @@ class RestAPI:
             # other kind of error occured during request
             logger.error('ERROR: HTTPException: '+str(e))
             return([-1, 'ERROR: HTTPException', st])
-        
+
         # Display the response status
         #print()
         #print ("Status = ", response.status)
@@ -210,15 +215,15 @@ class RestAPI:
         else:
             logger.error('Got error back. status: '+ str(response.status)+' - reason: '+str(response.reason))
             return_response = [-1, response.status, response_string]
-            
+
         #close connection
         connection.close()
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_response)
-    
+
     #general webrequest that creates/deletes sessions
-    def _general_webrequest(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, request_type:str='GET', url_suffix:str=None, body:str=None, timeout:int=60):
+    def _general_webrequest(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, request_type:str='GET', url_suffix:str=None, body:str=None, timeout:int=60, check=True):
         start = time.time()
 
         return_value = None
@@ -236,10 +241,14 @@ class RestAPI:
         #create session token if not a GET request
         if not request_type == 'GET':
             self._session_create()
-        
+
         #send request
         return_response = self._webrequest(fqdn_ip=fqdn_ip, port=port, username=username, password=password, request_type=request_type, url_suffix=url_suffix, body=body, timeout=timeout)
-        return_response = self.__check_response(return_response=return_response)
+
+        # Do not check response when there is no response.....
+        if check:
+            return_response = self.__check_response(return_response=return_response)
+
         end = time.time()
 
         #create session token if not a GET request
@@ -255,7 +264,7 @@ class RestAPI:
         #set StorageDeviceId if not already set
         if self._storage_device_id == None:
             self.storage_device_id_set()
-        
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
 
@@ -283,12 +292,12 @@ class RestAPI:
         logger.debug('Request response: ' + str(return_response))
         return_response = self.__check_response(return_response=return_response)
         #[{'storageDeviceId': '800000058068',  'model': 'VSP G1000',  'serialNumber': 58068,  'svpIp': '10.70.4.145'}]
-        
+
         #create a dictionary out of the list
         storages = {}
         for storage in return_response:
             storages[storage[self.__json_serial_number]] = storage
-        
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(storages)
@@ -301,7 +310,7 @@ class RestAPI:
         if fqdn_ip == None:
             #execute general procedures
             self._general_execute()
-        
+
         #set token to None so user and password is used
         self._token = None
         #set internal values if nothing is specified
@@ -331,7 +340,7 @@ class RestAPI:
 
         #execute general procedures
         self._general_execute()
-        
+
         #set token to None so user and password is used
         self._token = None
         #set internal values if nothing is specified
@@ -410,7 +419,7 @@ class RestAPI:
             body['serialNumber'] = storage_details['serialNumber']
             body['ctl1Ip'] = storage_details['ctl1Ip']
             body['ctl2Ip'] = storage_details['ctl2Ip']
-        
+
         if str(storage_details['model']) in ['VSP 5100', 'VSP 5500', 'VSP 5100H', 'VSP 5500H', 'VSP G200', 'VSP G400', 'VSP G600', 'VSP G800', 'VSP G1000', 'VSP G1500', 'VSP F400', 'VSP F600', 'VSP F800', 'VSP F1500', 'VSP N400', 'VSP N600', 'VSP N800', 'HUS VM', 'VSP']:
             #model, serialNumber, svpIp, isSecure used
             logger.debug('Storage model: '+str(storage_details['model']))
@@ -425,7 +434,7 @@ class RestAPI:
 
         logger.debug('Body set to: '+ json.dumps(body))
 
-        #register storage        
+        #register storage
         request_type = 'POST'
         logger.debug('Request string: '+str(request_type)+' - '+str(self.__url_base+self.__url_storages))
         return_response=self._general_webrequest(request_type=request_type, fqdn_ip=cmrestapi_fqdn_ip, port=cmrestapi_port, username=cmrest_username, password=cmrest_password, body=json.dumps(body), url_suffix=self.__url_base+self.__url_storages)
@@ -433,7 +442,7 @@ class RestAPI:
 
         return(return_response)
 
-    #set storage device id        
+    #set storage device id
     def storage_device_id_get(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, serial_number:str=None):
         start = time.time()
         request_type = 'GET'
@@ -442,7 +451,7 @@ class RestAPI:
 
         #set token to None so user and password is used
         self._token = None
-        
+
         #set internal values if nothing is specified
         if username == None:
             username = self._username
@@ -454,14 +463,14 @@ class RestAPI:
             port = self._port
 
         if self._storage_device_id == None:
-            logger.info('storageDeviceID not set. Send request to find out.')
+            # logger.info('storageDeviceID not set. Send request to find out.')
             logger.debug('Request string: '+str(request_type)+' - '+str(self.__url_base+self.__url_storages))
             return_response=self.storage_systems_get(fqdn_ip=fqdn_ip, username=username, password=password, port=port)
             logger.debug('Request response: ' + str(return_response))
         else:
             logger.info('storageDeviceID already set to: '+str(self._storage_device_id))
             return(self._storage_device_id)
-        
+
         if type(return_response) == dict:
             if len(return_response) == 1:
                 #only one storage system is returned
@@ -491,8 +500,8 @@ class RestAPI:
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_value)
-          
-    #set storage device id        
+
+    #set storage device id
     def storage_device_id_set(self, fqdn_ip:str=None, port:str=None, username:str=None, password:str=None, serial_number:str=None):
 
         #set token to None so user and password is used
@@ -516,9 +525,9 @@ class RestAPI:
         logger.debug('set class variable "_storage_device_id" to "' + str(return_response) + '"')
         self._storage_device_id = return_response
         return(return_response)
-    
+
         #get jobs
-    
+
     #get jobs
     def _jobs_get(self):
         '''
@@ -551,11 +560,11 @@ class RestAPI:
 
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_jobs))
         return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_jobs)
-        
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_response)
-        
+
     #get last job
     def _jobs_last_get(self):
         '''
@@ -573,7 +582,7 @@ class RestAPI:
             end = time.time()
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(return_response[0])
-    
+
     #get job by id
     def _jobs_by_id_get(self, jobId:str=None):
         '''
@@ -588,7 +597,7 @@ class RestAPI:
             for job in return_response:
                 if str(job['jobId']) == str(jobId):
                     return_value = job
-            
+
             #if the job id was not found in the list
             if return_value == None:
                 logger.error('ERROR: response: jobId: "'+str(jobId)+'" is not found. Please specify an existing jobId.')
@@ -602,7 +611,7 @@ class RestAPI:
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_value)
         #get host groups of one port
-    
+
     #get session id
     def _session_get(self):
         start = time.time()
@@ -632,7 +641,7 @@ class RestAPI:
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_response)
-   
+
     #create session
     def _session_create(self):
         '''
@@ -659,7 +668,7 @@ class RestAPI:
         '''
 
         return_response = self.__check_response(return_response=return_response, key='all')
-        if type(return_response) == dict:      
+        if type(return_response) == dict:
             logger.debug('token: ' + str(return_response[self.__json_token]))
             self._token = return_response[self.__json_token]
             logger.debug('session id: ' + str(return_response[self.__json_sessionId]))
@@ -668,11 +677,11 @@ class RestAPI:
         else:
             logger.error('the response was not in dictionary or json format.')
             return_value = -1
-        
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_value)
-        
+
     #delete session
     def _session_delete(self):
         '''
@@ -694,11 +703,51 @@ class RestAPI:
             self._token = None
             self._session_id = None
             return_value = None
-                    
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_value)
-    
+
+    # Show status of refresh for all arrays
+    def refresh_status(self):
+        start = time.time()
+        request_type='GET'
+
+        #execute general procedures
+        # self._general_execute()
+
+        # https://172.29.165.22:23451/ConfigurationManager/v1/views/refresh-statuses
+        logger.debug('Request string: '+str(request_type)+' - '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_views+'/refresh-statuses')
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_views+'/refresh-statuses')
+        logger.debug('Request response: ' + str(return_response))
+
+        return(return_response)
+
+
+    # Invoke a refresh for the acutal array
+    def refresh_invoke(self):
+        start = time.time()
+        request_type='PUT'
+
+        #execute general procedures
+        self._general_execute()
+
+        body = '''
+        {
+          "parameters": {
+            "storageDeviceId": '''+str(self._storage_device_id)+'''
+          }
+        }
+        '''
+
+        # https://172.29.165.22:23451/ConfigurationManager/v1/views/actions/refresh/invoke
+        logger.debug('Request string: '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_views+'/actions/refresh/invoke')
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+str(self.__url_base_views+'/actions/refresh/invoke'), body=body, check=False)
+        logger.debug('Request response: ' + str(return_response))
+        return(return_response)
+
+
+
     #lock the resource
     #not done
     def resource_lock(self, waitTime=None):
@@ -707,7 +756,7 @@ class RestAPI:
 
         #execute general procedures
         self._general_execute()
-        
+
         #set the default if it is not set or it is not a numeric value
         if waitTime == None or not (str(waitTime).isnumeric()):
             waitTime = 30
@@ -735,7 +784,7 @@ class RestAPI:
     def resource_group_get(self, timeout:int=180):
         start = time.time()
         request_type='GET'
-        
+
         '''
         {
             "data": [
@@ -773,7 +822,7 @@ class RestAPI:
             ...
             }
         '''
-   
+
         #execute general procedures
         self._general_execute()
 
@@ -784,6 +833,96 @@ class RestAPI:
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_response[0])
+
+    # ==========================================================================
+    # get host-wwn-paths by views
+    # ==========================================================================
+    # gets all lun path with hsds / wwn and more from ConfMgr DB (views)
+    # we get all possible (16384) elements
+    # ==========================================================================
+    # curl --insecure --noproxy '*' -H "Content-Type:application/json"  -u restadmin:restadmin0nly -X GET "https://172.29.165.22:23451/ConfigurationManager/v1/views/host-wwn-paths?\$count=16384&\$query=(ldev.storageDeviceId%20eq%20%27886000417711%27)"
+    # https://172.29.165.22:23451/ConfigurationManager/v1/views/host-wwn-paths?\$count=16384&\$query=(ldev.storageDeviceId%20eq%20%27886000417711%27)
+
+    # returns elements like that:
+
+    # {
+    #     'hostGroup': {   'hostGroupId': 'CL1-A,1',
+    #                      'hostGroupName': 'testvmdanb0001_1',
+    #                      'hostGroupNumber': 1,
+    #                      'hostMode': 'WIN_EX',
+    #                      'hostModeOptions': [2, 13, 25, 40],
+    #                      'isDefined': True,
+    #                      'portId': 'CL1-A',
+    #                      'resourceGroupId': 0,
+    #                      'storageDeviceId': '886000417711'},
+    #     'hostWwn': {   'hostWwnId': 'CL1-A,1,ff00112233445566',
+    #                    'storageDeviceId': '886000417711',
+    #                    'wwnNickname': '-'},
+    #     'ldev': {   'attributes': ['CVS', 'HDT'],
+    #                 'blockCapacity': 419430400,
+    #                 'byteFormatCapacity': '200.00 G',
+    #                 'clprId': 0,
+    #                 'dataReductionMode': 'disabled',
+    #                 'dataReductionStatus': 'DISABLED',
+    #                 'emulationType': 'OPEN-V-CVS',
+    #                 'isDefined': True,
+    #                 'isFullAllocationEnabled': False,
+    #                 'isRelocationEnabled': True,
+    #                 'label': 'a9cu-rh-gaga',
+    #                 'ldevId': 12544,
+    #                 'mpBladeId': 0,
+    #                 'numOfUsedBlock': 0,
+    #                 'poolId': 0,
+    #                 'resourceGroupId': 0,
+    #                 'status': 'NML',
+    #                 'storageDeviceId': '886000417711',
+    #                 'tierLevel': 'all',
+    #                 'tierLevelForNewPageAllocation': 'M',
+    #                 'usedCapacityPerTierLevel1': 0},
+    #     'lun': {'lun': 1, 'lunId': 'CL1-A,1,1', 'storageDeviceId': '886000417711'},
+    #     'port': {   'fabricMode': True,
+    #                 'loopId': 'EF',
+    #                 'lunSecuritySetting': True,
+    #                 'portAttributes': ['TAR', 'MCU', 'RCU', 'ELUN'],
+    #                 'portConnection': 'PtoP',
+    #                 'portId': 'CL1-A',
+    #                 'portSpeed': '16G',
+    #                 'portType': 'FIBRE',
+    #                 'storageDeviceId': '886000417711',
+    #                 'wwn': '50060e8012452f00'},
+    #     'wwn': {'wwn': 'ff00112233445566'}
+    # }
+
+
+    def view_host_wwn_paths_get(self):
+        start = time.time()
+        return_value = None
+        request_type='GET'
+
+        #execute general procedures
+        self._general_execute()
+
+        logger.debug('Request string: '+str(request_type)+' - '+str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_views+self.__url_host_wwn_paths+'?$count=16384&$query=ldev.storageDeviceId%20eq%20'+str(self._storage_device_id))
+        return_response = self._general_webrequest(request_type=request_type, url_suffix=str(self.__url_base_ConfigurationManager)+str(self.__url_base_v1)+self.__url_base_views+self.__url_host_wwn_paths+'?$count=16384&$query=ldev.storageDeviceId%20eq%20'+str(self._storage_device_id))
+
+        logger.debug('Request response: ' + str(return_response))
+
+        #if it is not a list then make it to one with one element
+        if not isinstance(return_response, (list,)):
+            return_response = [return_response]
+
+        #create dictionary out of the data
+        # host_wwn_paths = {}
+
+        # i = 0
+        # for path in return_response:
+        #     i += 1
+        #     host_wwn_paths[path[self.__json_ldevId]] = ldev
+
+        end = time.time()
+        logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
+        return(return_response)
+
 
     #get pools
     def pools_get(self, poolId=None, timeout:int=30):
@@ -824,8 +963,8 @@ class RestAPI:
                 return_value = pools
             else:
                 logger.error('Pool Id is not a number ('+str(poolId)+'). Must be between 0 and 127')
-                return_value = -1     
-        
+                return_value = -1
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_value)
@@ -841,14 +980,14 @@ class RestAPI:
         self._general_execute()
 
         '''
-        {'CL1-A': {'portId': 'CL1-A', 
-                 'portType': 'FIBRE', 
-           'portAttributes': ['MCU'], 
-                'portSpeed': '8G', 
-                   'loopId': 'EF', 
-               'fabricMode': True, 
-           'portConnection': 'PtoP', 
-       'lunSecuritySetting': True, 
+        {'CL1-A': {'portId': 'CL1-A',
+                 'portType': 'FIBRE',
+           'portAttributes': ['MCU'],
+                'portSpeed': '8G',
+                   'loopId': 'EF',
+               'fabricMode': True,
+           'portConnection': 'PtoP',
+       'lunSecuritySetting': True,
                       'wwn': '50060e8007e2d400'}}
         '''
 
@@ -883,25 +1022,32 @@ class RestAPI:
             ports[str(return_response['portId'])] = {}
             ports[str(return_response['portId'])] = return_response
             return_value = ports
-        
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(return_value)
 
-    #get all ldevs or a specifig ldev
-    def ldevs_get(self, ldevNumber=None, count=16384, timeout:int=1000):
+    # get all ldevs or a specifig ldev
+    # TODO: Support more parameters (Page: 420ff Hitachi Ops Center API Configuration Manager REST API Reference Guide)
+    #
+    def ldevs_get(self, ldevNumber=None, count=16384, timeout:int=1000, defined=True):
         start = time.time()
         #max ldevs 16384
         request_type='GET'
 
         #execute general procedures
         self._general_execute()
-        
+
         if ldevNumber == None:
             if timeout == 30:
                 timeout = 600
-            logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count)))
-            return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count), timeout=timeout)
+            if defined == True:
+                # Get only the defined LDEVs, makes more sense, and is much faster.....
+                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count)+'&ldevOption=defined'))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count)+'&ldevOption=defined', timeout=timeout)
+            else:
+                logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count)))
+                return_response = self._general_webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/ldevs?count='+str(count), timeout=timeout)
             logger.debug('Request response: ' + str(return_response))
         else:
             if str(ldevNumber).isnumeric():
@@ -926,7 +1072,7 @@ class RestAPI:
         for ldev in return_response:
             i += 1
             ldevs[ldev[self.__json_ldevId]] = ldev
-        
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(ldevs)
@@ -941,11 +1087,11 @@ class RestAPI:
 
         '''
         {'CL3-B,0': {'hostGroupId': 'CL3-B,0',
-                          'portId': 'CL3-B', 
+                          'portId': 'CL3-B',
                  'hostGroupNumber': 0,
                    'hostGroupName': '3B-G00',
                         'hostMode': 'LINUX/IRIX',
-                 'resourceGroupId': 0, 
+                 'resourceGroupId': 0,
                        'isDefined': True}}
         '''
         logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+str(self._storage_device_id)+'/host-groups?portId='+portId+'&isUndefined=false&detailInfoType=resourceGroup'))
@@ -956,9 +1102,10 @@ class RestAPI:
         #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
         i = 0
         for hostGroup in return_response:
-            i += 1
-            #print(str(hostGroup['hostGroupId']), ' hostgroup ' + str(i) + 'of' + str(len(return_response)))
-            hostGroups[str(hostGroup['hostGroupId'])] = hostGroup
+            if '-G00' not in hostGroup['hostGroupId']:
+                i += 1
+                #print(str(hostGroup['hostGroupId']), ' hostgroup ' + str(i) + 'of' + str(len(return_response)))
+                hostGroups[str(hostGroup['hostGroupId'])] = hostGroup
 
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
@@ -975,11 +1122,11 @@ class RestAPI:
         #get all portIds
         return_response = self.ports_get()
         logger.debug('Request response: ' + str(return_response))
-        
+
         hostgroups = {}
-        
+
         i = 0
-        for port in return_response:               
+        for port in return_response:
             #host group infos
             logger.info(port)
             return_response_hostgroup = self.host_groups_one_port_get(portId=port, timeout=timeout)
@@ -1000,20 +1147,20 @@ class RestAPI:
         self._general_execute()
 
         '''
-        {'CL3-B,5,0': {'lunId': 'CL3-B,5,0', 
-                      'portId': 'CL3-B', 
-             'hostGroupNumber': 5, 
-                    'hostMode': 'VMWARE_EX', 
-                         'lun': 0, 
-                      'ldevId': 1536, 
-             'isCommandDevice': False, 
-               'luHostReserve': {'openSystem': False, 
-                                 'persistent': False, 
-                                     'pgrKey': False, 
-                                  'mainframe': False, 
-                                 'acaReserve': False}, 
-                            'hostModeOptions': [54, 63, 114], 
-                              'isAluaEnabled': True, 
+        {'CL3-B,5,0': {'lunId': 'CL3-B,5,0',
+                      'portId': 'CL3-B',
+             'hostGroupNumber': 5,
+                    'hostMode': 'VMWARE_EX',
+                         'lun': 0,
+                      'ldevId': 1536,
+             'isCommandDevice': False,
+               'luHostReserve': {'openSystem': False,
+                                 'persistent': False,
+                                     'pgrKey': False,
+                                  'mainframe': False,
+                                 'acaReserve': False},
+                            'hostModeOptions': [54, 63, 114],
+                              'isAluaEnabled': True,
                       'asymmetricAccessState': 'Active/Optimized'}}}
         '''
 
@@ -1031,7 +1178,7 @@ class RestAPI:
             end = time.time()
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(None)
-        
+
         #Internal Error (no hostgroup on port)
         if isinstance(return_response, (list,)):
             if isinstance(return_response[0], (int,)):
@@ -1056,7 +1203,7 @@ class RestAPI:
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(luns)
-    
+
     #get the luns of one hostgroups of one port
     def luns_one_port_get(self, portId, timeout:int=60):
         start = time.time()
@@ -1066,20 +1213,20 @@ class RestAPI:
         self._general_execute()
 
         '''
-        {'CL3-B,5,0': {'lunId': 'CL3-B,5,0', 
-                      'portId': 'CL3-B', 
-             'hostGroupNumber': 5, 
-                    'hostMode': 'VMWARE_EX', 
-                         'lun': 0, 
-                      'ldevId': 1536, 
-             'isCommandDevice': False, 
-               'luHostReserve': {'openSystem': False, 
-                                 'persistent': False, 
-                                     'pgrKey': False, 
-                                  'mainframe': False, 
-                                 'acaReserve': False}, 
-                            'hostModeOptions': [54, 63, 114], 
-                              'isAluaEnabled': True, 
+        {'CL3-B,5,0': {'lunId': 'CL3-B,5,0',
+                      'portId': 'CL3-B',
+             'hostGroupNumber': 5,
+                    'hostMode': 'VMWARE_EX',
+                         'lun': 0,
+                      'ldevId': 1536,
+             'isCommandDevice': False,
+               'luHostReserve': {'openSystem': False,
+                                 'persistent': False,
+                                     'pgrKey': False,
+                                  'mainframe': False,
+                                 'acaReserve': False},
+                            'hostModeOptions': [54, 63, 114],
+                              'isAluaEnabled': True,
                       'asymmetricAccessState': 'Active/Optimized'}}}
         '''
 
@@ -1104,10 +1251,10 @@ class RestAPI:
             else:
                 for lun in return_response_luns:
                     luns[lun] = return_response_luns[lun]
-        
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-        if len(luns) == 0:    
+        if len(luns) == 0:
             return(None)
         else:
             return(luns)
@@ -1126,7 +1273,7 @@ class RestAPI:
 
         luns = {}
         i = 0
-        for port in return_response:               
+        for port in return_response:
             #host group infos
             logger.info(port)
             return_response_luns = self.luns_one_port_get(portId=port, timeout=timeout)
@@ -1137,7 +1284,7 @@ class RestAPI:
 
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-        return(luns)      
+        return(luns)
 
     #get the wwns of one hostgroups of one port
     def wwns_get(self, portId_hostGroupId, timeout:int=30):
@@ -1185,7 +1332,7 @@ class RestAPI:
         for wwn in return_response:
             i += 1
             wwns[wwn[self.__json_hostWwnId]] = wwn
-        
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(wwns)
@@ -1218,10 +1365,10 @@ class RestAPI:
             else:
                 for wwn in return_response_wwns:
                     wwns[wwn] = return_response_wwns[wwn]
-        
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
-        if len(wwns) == 0:    
+        if len(wwns) == 0:
             return(None)
         else:
             return(wwns)
@@ -1241,7 +1388,7 @@ class RestAPI:
         #create dictionary out of the data
         wwns = {}
         i = 0
-        for port in return_response:               
+        for port in return_response:
             #host group infos
             logger.info(port)
             return_response_wwns = self.wwns_one_port_get(portId=port, timeout=timeout)
@@ -1258,7 +1405,7 @@ class RestAPI:
     def replication_get(self, replicationType=None, timeout:int=1000):
         start = time.time()
         request_type='GET'
-                
+
         #execute general procedures
         self._general_execute()
 
@@ -1288,11 +1435,11 @@ class RestAPI:
         for replication in return_response:
             i += 1
             replications[replication[self.__json_remoteReplicationId]] = replication
-        
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(replications)
-        
+
     #get snapshotgroups or a specific snapshotgroup
     def snapshotgroups_get(self, snapshotGroupName=None, timeout:int=30):
         start = time.time()
@@ -1309,11 +1456,11 @@ class RestAPI:
             logger.debug('Request string: '+str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+self.__url_snapshotgroups+'/'+str(snapshotGroupName))
             return_response = self._general_webrequest(request_type=request_type, url_suffix=str(self.__url_base+self.__url_storages)+'/'+str(self._storage_device_id)+self.__url_snapshotgroups+'/'+str(snapshotGroupName), timeout=timeout)
             logger.debug('Request response: ' + str(return_response))
-        
+
         #if it is not a list then make it to one with one element
         if not isinstance(return_response, (list,)):
             return_response = [return_response]
-        
+
         #create dictionary out of the data
         snapshotgroups = {}
         #print('Number of storage hostgroups of port ('+ str(portId) +'):', len(return_response))
@@ -1321,7 +1468,7 @@ class RestAPI:
         for snapshotgroup in return_response:
             i += 1
             snapshotgroups[snapshotgroup[self.__json_snapshotGroupName]] = snapshotgroup
-        
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(snapshotgroups)
@@ -1360,19 +1507,19 @@ class RestAPI:
         for snapshot in return_response:
             i += 1
             if self.__json_snapshotReplicationId in snapshot:
-                snapshots[snapshot[self.__json_snapshotReplicationId]] = snapshot          
+                snapshots[snapshot[self.__json_snapshotReplicationId]] = snapshot
             else:
-                snapshots[snapshot[self.__json_snapshotId]] = snapshot                
-        
+                snapshots[snapshot[self.__json_snapshotId]] = snapshot
+
         end = time.time()
         logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
         return(snapshots)
-    
+
     #create snapshots
     #not done
     def snapshots_create(self, pvolLdevId=None, snapshotGroupName=None, snapshotPoolId=None, isClone=False, isConsistencyGroup=True,
                         autoSplit=True):
-        
+
         start = time.time()
         request_type='POST'
 
@@ -1381,7 +1528,7 @@ class RestAPI:
 
         #create session token
         self._session_create()
-        
+
         if pvolLdevId == None:
             logger.error('ERROR: response: You must specify a pvolLdevId.')
             end = time.time()
@@ -1394,7 +1541,7 @@ class RestAPI:
                     #snapshotgroup string can be at max 32 characters
                     #create uuid4.hex (RFC 4122) string -> 'aa77aba4d3484b358fd509a43b9b44ab' 32 chars
                     snapshotGroupName = str(uuid.uuid4().hex)
-                
+
                 body = '''
                 {
                 "snapshotGroupName": "snapshotGroup",
@@ -1422,14 +1569,14 @@ class RestAPI:
                 end = time.time()
                 logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
                 return(-1)
-            
+
         if len(return_response) == 3:
             if return_response[0] == 0:
                 #success
-                
+
                 #remove session token
                 self._session_delete()
-                
+
                 end = time.time()
                 logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
                 return(return_response[2])
@@ -1443,7 +1590,7 @@ class RestAPI:
             end = time.time()
             logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
             return(-1)
-    
+
     #resync snapshots
     #not done
     def snapshots_resync(self, snapshotGroupName=None, autoSplit=True):
@@ -1455,11 +1602,11 @@ class RestAPI:
 
         #create session token
         self._session_create()
-        
-        
+
+
         body = json.dumps({"parameters": {"autoSplit": autoSplit}})
         logger.debug('body: ' + str(body))
-        
+
         if snapshotGroupName == None:
             logger.error('ERROR: response: You must specify a snapshotGroupName.')
             end = time.time()
@@ -1469,14 +1616,14 @@ class RestAPI:
             logger.debug('Request string: '+str(self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_snapshotgroups+'/'+str(snapshotGroupName)+'/actions/resync/invoke', body=body))
             return_response=self._webrequest(request_type=request_type, url_suffix=self.__url_base+self.__url_storages+'/'+self._storage_device_id+self.__url_snapshotgroups+'/'+str(snapshotGroupName)+'/actions/resync/invoke', body=body)
             logger.debug('Request response: ' + str(return_response))
-            
+
         if len(return_response) == 3:
             if return_response[0] == 0:
                 #success
-                
+
                 #remove session token
                 self._session_delete()
-                
+
                 end = time.time()
                 logger.debug('total time used: ' + str("{0:05.1f}".format(end-start)) + "sec")
                 return(return_response[2])
@@ -1496,13 +1643,13 @@ class RestAPI:
     def snapshots_delete(self, snapshotGroupName=None):
         start = time.time()
         request_type='DELETE'
-        
+
         #execute general procedures
         self._general_execute()
 
         #create session token
         self._session_create()
-        
+
         request_type='DELETE'
         if snapshotGroupName == None:
             logger.error('ERROR: response: You must specify a snapshotGroupName.')
@@ -1517,10 +1664,10 @@ class RestAPI:
         if len(return_response) == 3:
             if return_response[0] == 0:
                 #success
-                
+
                 #remove session token
                 self._session_delete()
-                
+
                 return(return_response[2])
             else:
                 logger.warning('WARNING: response status:'+str(return_response[1])+', response reason:'+str(return_response[2]))
