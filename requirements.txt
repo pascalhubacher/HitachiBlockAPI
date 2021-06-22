@@ -46,7 +46,7 @@ sqlite=3.33.0=h2a8f88b_0
 toml=0.10.2=pyhd8ed1ab_0
 tqdm=4.54.1=pyhd8ed1ab_0
 twine=3.2.0=py37hc8dfbb8_1
-urllib3=1.25.11=py_0
+urllib3>=1.26.5
 vc=14.2=h21ff451_1
 vs2015_runtime=14.27.29016=h5e58377_2
 webencodings=0.5.1=py_1
